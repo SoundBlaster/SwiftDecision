@@ -124,14 +124,22 @@ With a reference file, the suite requires exact selected option identifiers and 
 
 ## Benchmarks
 
-Native Laya MLX and hosted TypeSafe Jev are the current model-backed inference backends. The local parity suite measures output compatibility, not performance; SwiftDecision does not yet publish latency or throughput numbers. The mock backend is included for examples and CI contract tests, not as a model benchmark.
+Native Laya MLX and hosted TypeSafe Jev are the current model-backed inference backends. The local Laya parity suite measures output compatibility, not performance. TypeSafe Jev has an initial live latency sample below. The mock backend is included for examples and CI contract tests, not as a model benchmark.
 
 | Backend | Example workloads | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
 | Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Local Python parity passes in FP16 and FP32 | Not measured | Not measured |
+| TypeSafe Jev | Noul, Choice, and Score | Mock HTTP contract tests; opt-in live smoke test | Noul 264.7 / 307.4 ms; Choice 279.4 / 326.5 ms; Score 254.6 / 353.1 ms | Noul 3.677; Choice 3.527; Score 3.588 decisions/s |
 | `ClosureDecisionBackend` | Deterministic Noul, Choice, and Score fixtures | Request/response contract covered in CI | Not applicable | Not applicable |
-| TypeSafe Jev | Noul, Choice, and Score | Mock HTTP contract tests; opt-in live smoke test | Not measured | Not measured |
 | Apple Foundation Models | Noul, Choice, and Score | Planned integration | — | — |
+
+The Jev figures are one sequential live run from 2026-09-21 with 20 measured requests per decision kind and one warm-up request per kind (63 requests total), using model identifier `jev-1.13.0` on macOS 27.0 (build 26A428), arm64, and Swift 6.4. Latency covers the full `DecisionEngine` call, including network and provider inference; throughput is measured calls divided by summed latency. P50 is the median (the average of the two middle samples for this even-sized run); P95 uses nearest rank. These are a dated sample of a hosted service, not a hardware-independent performance guarantee. The runner prints raw samples and system details for repeatable comparisons.
+
+Run the opt-in live benchmark with `TYPESAFE_API_KEY` set. It requires the explicit environment opt-in below and sends billable live requests; the default CI does not run it. The sample count must be between 10 and 100 per decision kind.
+
+```sh
+SWIFTDECISION_RUN_JEV_BENCHMARKS=1 swift run --disable-default-traits JevBenchmark --samples 20
+```
 
 ## Build and test
 
