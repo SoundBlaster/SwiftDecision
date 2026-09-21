@@ -71,16 +71,40 @@ swift test --traits MLX --triple arm64-apple-macosx14.0
 
 The model parameters are provided by Convai Innovations under the model card's terms. This repository does not redistribute weights. Laya prompt and output conventions are Apache-2.0-derived; see [NOTICE](NOTICE) and [LICENSE](LICENSE).
 
-Set `SWIFTDECISION_LAYA_CHECKPOINT` to a local checkpoint directory and `SWIFTDECISION_LAYA_REFERENCE_JSON` to a JSON file containing Python Laya-MLX reference outputs for the fixed parity prompts. The file has `noul`, `choice`, and `score` keys; each value contains `selectedOptionID` and `probabilities`. Then run:
+Set `SWIFTDECISION_LAYA_CHECKPOINT` to a local checkpoint directory to run the native backend against fixed Noul, Choice, and Score prompts. This smoke test checks model identity and the shape and normalization of each probability response; it does not require Python or a network connection:
 
 ```sh
 SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
-SWIFTDECISION_LAYA_REFERENCE_JSON=/path/to/reference.json \
-SWIFTDECISION_LAYA_PRECISION=float32 \
 swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
 ```
 
-The parity suite uses fixed Noul, Choice, and Score requests, requires exact selected option identifiers, and compares probabilities to reference values within `0.0001` for FP32 or `0.02` for FP16. Generate the reference JSON using the Python Laya-MLX runtime with the same checkpoint; Python is used only as the parity oracle, never by the Swift backend. CI skips this test unless both local paths are provided.
+For numerical parity, also set `SWIFTDECISION_LAYA_REFERENCE_JSON` to a JSON file containing Python Laya-MLX reference outputs for those prompts. The file has `noul`, `choice`, and `score` keys; each value contains `selectedOptionID` and `probabilities`. Then run:
+
+```sh
+python3 -m pip install laya-mlx
+python3 Scripts/generate_laya_reference.py \
+  --checkpoint /path/to/laya-mlx \
+  --output /path/to/laya-reference.json \
+  --dtype float16
+
+SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
+SWIFTDECISION_LAYA_REFERENCE_JSON=/path/to/reference.json \
+SWIFTDECISION_LAYA_PRECISION=float16 \
+swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
+```
+
+With a reference file, the suite requires exact selected option identifiers and compares probabilities within `0.0001` for FP32 or `0.02` for FP16. Generate the reference JSON using the Python Laya-MLX runtime with the same checkpoint; Python is used only as the parity oracle, never by the Swift backend. CI does not download weights and skips this local-checkpoint suite unless `SWIFTDECISION_LAYA_CHECKPOINT` is set. The regular CI suite uses deterministic request/response fixtures to cover typed decisions without model files.
+
+## Benchmarks
+
+Laya is currently the only model-backed inference backend. The local parity suite measures output compatibility, not performance; SwiftDecision does not yet publish latency or throughput numbers. The mock backend is included for examples and CI contract tests, not as a model benchmark.
+
+| Backend | Example workloads | Correctness evidence | P50 / P95 latency | Throughput |
+| --- | --- | --- | --- | --- |
+| Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Local Python parity passes in FP16 and FP32 | Not measured | Not measured |
+| `ClosureDecisionBackend` | Deterministic Noul, Choice, and Score fixtures | Request/response contract covered in CI | Not applicable | Not applicable |
+| TypeSafe Jev | Noul, Choice, and Score | Planned integration | — | — |
+| Apple Foundation Models | Noul, Choice, and Score | Planned integration | — | — |
 
 ## Build and test
 

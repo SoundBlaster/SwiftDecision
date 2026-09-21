@@ -30,25 +30,28 @@ final class LayaParityTests: XCTestCase {
         ))
     }
 
-    func testFixedNoulChoiceAndScoreInputsMatchPythonLayaReference() async throws {
+    func testFixedNoulChoiceAndScoreInputsRunOnLocalCheckpoint() async throws {
         guard let checkpointPath = ProcessInfo.processInfo.environment["SWIFTDECISION_LAYA_CHECKPOINT"] else {
-            throw XCTSkip("Set SWIFTDECISION_LAYA_CHECKPOINT to run local model parity")
+            throw XCTSkip("Set SWIFTDECISION_LAYA_CHECKPOINT to run native Laya integration tests")
         }
-        guard let referencePath = ProcessInfo.processInfo.environment["SWIFTDECISION_LAYA_REFERENCE_JSON"] else {
-            throw XCTSkip("Set SWIFTDECISION_LAYA_REFERENCE_JSON to Python Laya-MLX probability outputs")
+        let reference: ReferenceDocument?
+        if let referencePath = ProcessInfo.processInfo.environment["SWIFTDECISION_LAYA_REFERENCE_JSON"] {
+            reference = try JSONDecoder().decode(
+                ReferenceDocument.self,
+                from: Data(contentsOf: URL(fileURLWithPath: referencePath))
+            )
+        } else {
+            reference = nil
         }
-        let reference = try JSONDecoder().decode(
-            ReferenceDocument.self,
-            from: Data(contentsOf: URL(fileURLWithPath: referencePath))
-        )
-        let precisionName = ProcessInfo.processInfo.environment["SWIFTDECISION_LAYA_PRECISION"] ?? "float32"
+        let precisionName = ProcessInfo.processInfo.environment["SWIFTDECISION_LAYA_PRECISION"]
+            ?? (reference == nil ? "float16" : "float32")
         let precision: LayaPrecision = precisionName == "float16" ? .float16 : .float32
         let tolerance = precision == .float16 ? 0.02 : 0.0001
         let backend = try LayaMLXBackend(
             checkpointAt: URL(fileURLWithPath: checkpointPath),
             precision: precision
         )
-        let cases: [(DecisionPrompt, ReferenceCase)] = [
+        let cases: [(DecisionPrompt, ReferenceCase?)] = [
             (
                 DecisionPrompt(
                     id: "parity-noul",
@@ -56,11 +59,11 @@ final class LayaParityTests: XCTestCase {
                     instructions: "Is the service outage affecting every customer?",
                     context: "The status page reports that all customers are unable to sign in.",
                     options: [
-                        DecisionOption(id: "false", description: "no: the outage is limited"),
-                        DecisionOption(id: "true", description: "yes: all customers are affected")
+                        DecisionOption(id: "false", description: "false: no, the statement does not hold"),
+                        DecisionOption(id: "true", description: "true: yes, the statement holds")
                     ]
                 ),
-                reference.noul
+                reference?.noul
             ),
             (
                 DecisionPrompt(
@@ -74,7 +77,7 @@ final class LayaParityTests: XCTestCase {
                         DecisionOption(id: "sales", description: "sales: plan selection or purchasing")
                     ]
                 ),
-                reference.choice
+                reference?.choice
             ),
             (
                 DecisionPrompt(
@@ -88,12 +91,17 @@ final class LayaParityTests: XCTestCase {
                         DecisionOption(id: "2", description: "level 2: fully answers the question")
                     ]
                 ),
-                reference.score
+                reference?.score
             )
         ]
 
         for (prompt, expected) in cases {
             let actual = try await backend.predict(for: prompt)
+            XCTAssertEqual(actual.probabilities.count, prompt.options.count, prompt.id)
+            XCTAssertTrue(actual.probabilities.allSatisfy { $0.isFinite && $0 >= 0 }, prompt.id)
+            XCTAssertEqual(actual.probabilities.reduce(0, +), 1, accuracy: 0.01, prompt.id)
+            XCTAssertEqual(actual.modelIdentifier, "laya-mlx", prompt.id)
+            guard let expected else { continue }
             XCTAssertEqual(actual.probabilities.count, expected.probabilities.count, prompt.id)
             let selectedIndex = actual.probabilities.indices.max {
                 actual.probabilities[$0] < actual.probabilities[$1]

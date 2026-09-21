@@ -4,20 +4,16 @@ import XCTest
 
 final class DecisionEngineTests: XCTestCase {
     func testNoulChoiceAndScoreReturnTypedAcceptedValues() async throws {
-        let backend = ClosureDecisionBackend { prompt in
-            switch prompt.kind {
-            case .noul:
-                DecisionPrediction(probabilities: [0.08, 0.92], modelIdentifier: "fixture")
-            case .choice:
-                DecisionPrediction(probabilities: [0.03, 0.91, 0.06], modelIdentifier: "fixture")
-            case .score:
-                DecisionPrediction(probabilities: [0.1, 0.2, 0.7], modelIdentifier: "fixture")
-            }
-        }
+        let backend = MockLayaRequestResponseBackend()
         let engine = DecisionEngine(backend: backend)
 
-        let noul = try await engine.noul(statement: "Is it urgent?", context: "Urgent message")
+        let noul = try await engine.noul(
+            id: "noul-fixture",
+            statement: "Is it urgent?",
+            context: "Urgent message"
+        )
         let choice = try await engine.choice(
+            id: "choice-fixture",
             instructions: "Choose a folder.",
             context: "A receipt",
             options: [
@@ -27,6 +23,7 @@ final class DecisionEngineTests: XCTestCase {
             ]
         )
         let score = try await engine.score(
+            id: "score-fixture",
             instructions: "Rate the quality.",
             context: "A detailed answer",
             levels: [
@@ -41,9 +38,26 @@ final class DecisionEngineTests: XCTestCase {
         XCTAssertEqual(choice.value, "finance")
         XCTAssertEqual(score.value?.level, 2)
         XCTAssertEqual(score.value?.expectedValue ?? -1, 0.8, accuracy: 0.0001)
+        let requests = await backend.receivedRequests()
+        XCTAssertEqual(requests.map(\.id), ["noul-fixture", "choice-fixture", "score-fixture"])
+        XCTAssertEqual(requests.map(\.kind), [.noul, .choice, .score])
+        XCTAssertEqual(requests.map(\.instructions), [
+            "Is it urgent?", "Choose a folder.", "Rate the quality."
+        ])
+        XCTAssertEqual(requests.map(\.context), ["Urgent message", "A receipt", "A detailed answer"])
+        XCTAssertEqual(requests.map { $0.options.map(\.id) }, [
+            ["false", "true"],
+            ["0", "1", "2"],
+            ["0", "1", "2"]
+        ])
+        XCTAssertEqual(requests[1].options.map(\.description), ["work", "finance", "personal"])
+        XCTAssertEqual(requests[2].options.map(\.description), [
+            "level 0: poor", "level 1: adequate", "level 2: excellent"
+        ])
         XCTAssertEqual(noul.trace.map(\.stage), [
             .requestValidated, .policySelected, .inferenceStarted, .inferenceCompleted, .outputValidated, .resolved
         ])
+        XCTAssertEqual(noul.trace.first { $0.stage == .inferenceCompleted }?.detail, "laya-mock-fixture")
     }
 
     func testPolicyCanAbstainOrUseDistinctFallback() async throws {
@@ -175,6 +189,23 @@ final class DecisionEngineTests: XCTestCase {
         await suspendedBackend.waitUntilCompleted()
         XCTAssertLessThan(elapsed, .milliseconds(500))
     }
+}
+
+/// CI-safe request/response fixture for the Laya-shaped backend contract.
+private actor MockLayaRequestResponseBackend: DecisionBackend {
+    private var requests: [DecisionPrompt] = []
+
+    func predict(for prompt: DecisionPrompt) async throws -> DecisionPrediction {
+        requests.append(prompt)
+        let probabilities: [Double] = switch prompt.kind {
+        case .noul: [0.08, 0.92]
+        case .choice: [0.03, 0.91, 0.06]
+        case .score: [0.1, 0.2, 0.7]
+        }
+        return DecisionPrediction(probabilities: probabilities, modelIdentifier: "laya-mock-fixture")
+    }
+
+    func receivedRequests() -> [DecisionPrompt] { requests }
 }
 
 private actor SuspendedDecisionPrediction {
