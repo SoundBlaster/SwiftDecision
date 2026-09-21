@@ -12,7 +12,8 @@ let package = Package(
     ],
     products: [
         .library(name: "SwiftDecision", targets: ["SwiftDecision"]),
-        .executable(name: "InboxTriageExample", targets: ["InboxTriageExample"])
+        .executable(name: "InboxTriageExample", targets: ["InboxTriageExample"]),
+        .executable(name: "JevBenchmark", targets: ["JevBenchmark"])
     ],
     traits: [
         .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend.")
@@ -39,6 +40,11 @@ let package = Package(
             name: "InboxTriageExample",
             dependencies: ["SwiftDecision"],
             path: "Examples/InboxTriage"
+        ),
+        .executableTarget(
+            name: "JevBenchmark",
+            dependencies: ["SwiftDecision"],
+            path: "Benchmarks/JevBenchmark"
         ),
         .testTarget(
             name: "SwiftDecisionTests",
