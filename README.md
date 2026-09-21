@@ -1,52 +1,199 @@
 # SwiftDecision
 
 [![CI](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/release/SoundBlaster/SwiftDecision)](https://github.com/SoundBlaster/SwiftDecision/releases)
 [![Swift 6.3+](https://img.shields.io/badge/Swift-6.3%2B-orange?logo=swift)](https://www.swift.org)
 ![Apple platforms](https://img.shields.io/badge/Apple%20platforms-macOS%2010.15%2B%20%7C%20iOS%2013%2B%20%7C%20tvOS%2013%2B%20%7C%20watchOS%206%2B-lightgrey?logo=apple)
 ![Optional MLX trait](https://img.shields.io/badge/MLX-optional%20trait-6e56cf?logo=apple)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-SwiftDecision provides typed asynchronous Noul, Choice, and Score decisions over interchangeable model backends. It uses [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) internally for async request/output validation, ordered policy routing, and backend decision composition.
+**Turn model probabilities into typed decisions your Swift app can act on.**
 
-The base package has no model downloads and keeps the package deployment floors at macOS 10.15, iOS 13, tvOS 13, and watchOS 6. The optional native MLX backend requires macOS 14 or iOS 17 and an Apple Silicon device. TypeSafe Jev is available through its hosted API; an Apple Foundation Models adapter remains planned.
+SwiftDecision gives applications a small, composable decision layer for AI-powered classification, routing, yes/no checks, and rubric scoring. Ask a model to choose from your options; get a typed value with its probabilities, confidence, and an explicit outcome. If a result does not meet your policy, SwiftDecision can abstain or return your chosen fallback.
 
-## Requirements
+Connect the hosted [TypeSafe Jev](https://docs.typesafe.ai/) API, run the English Laya model locally with native Apple MLX, or provide your own backend. [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) powers request and output validation, ordered policy routing, and decision composition inside the package.
 
-- Swift tools 6.3 or newer. `mlx-swift` currently requires Swift tools 6.3.
-- Swift 6.4 is used in the current macOS CI toolchain; Swift 6.3 is the minimum CI lane.
+**Models propose. Your application keeps control of policy and action.**
 
-## Offline example
+## Why SwiftDecision
 
-The package includes a deterministic Inbox Triage example that makes no network or model calls:
+- **Use model decisions as Swift values.** `choice` preserves your typed labels; `noul` returns `Bool`; `score` returns a selected rubric level and an expected numeric value.
+- **Handle uncertainty explicitly.** Configure acceptance thresholds and choose between an accepted result, abstention for review, or an application-defined fallback.
+- **Keep backends replaceable.** Use Jev, local Laya with the optional `MLX` trait, or any type that conforms to `DecisionBackend`.
+- **Compose with SpecificationCore.** Async specifications validate inputs and predictions, select policies in order, and wrap backend evaluation.
+- **Own operational behavior.** SwiftDecision checks cancellation, supports inference timeouts, and can emit content-free traces and metrics.
+
+Embed typed decisions in the workflows your app already owns. Connect the result to your UI, queue, or next action in application code.
+
+## Quick start
+
+### 1. Add the package
+
+In your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.1.0")
+],
+```
+
+Add the product to your target:
+
+```swift
+.product(name: "SwiftDecision", package: "SwiftDecision")
+```
+
+### 2. Make a typed decision
+
+Set `TYPESAFE_API_KEY` in your environment, then use a backend and engine:
+
+```sh
+export TYPESAFE_API_KEY="your-api-key"
+```
+
+```swift
+import SwiftDecision
+
+enum InboxRoute: Sendable, Hashable {
+    case billing
+    case support
+    case manualReview
+}
+
+@main
+struct InboxTriage {
+    static func main() async throws {
+        let backend = try JevDecisionBackend() // Reads TYPESAFE_API_KEY.
+        let engine = DecisionEngine(
+            backend: backend,
+            configuration: .init(timeout: 8)
+        )
+
+        let result = try await engine.choice(
+            instructions: "Choose the best team for this customer message.",
+            context: "I was charged twice for my subscription.",
+            options: [
+                ChoiceOption(label: InboxRoute.billing, description: "billing: invoices, refunds, and charges"),
+                ChoiceOption(label: InboxRoute.support, description: "support: account access and product use"),
+                ChoiceOption(label: InboxRoute.manualReview, description: "manual review: the right team is unclear")
+            ],
+            fallback: .manualReview
+        )
+
+        switch result.outcome {
+        case let .accepted(route):
+            print("Route to: \(route)")
+        case let .abstained(reason):
+            print("Review required: \(reason)")
+        case let .fallback(route, reason):
+            print("Use \(route); model result did not meet policy: \(reason)")
+        }
+    }
+}
+```
+
+`choice` returns `DecisionResult<InboxRoute>`. The model never has to generate or parse your app's enum: SwiftDecision maps the winning option back to its original typed label. `noul` evaluates a Boolean statement; `score` evaluates an ordered rubric and also reports the probability-weighted expected value.
+
+For a no-network example that runs with deterministic fixture responses:
 
 ```sh
 swift run InboxTriageExample
 ```
 
-Application-owned or test backends can use `ClosureDecisionBackend`:
+## Decision outcomes
+
+Every decision is resolved against the policy configured for its kind:
+
+- **Accepted:** the best option satisfies your probability and confidence thresholds.
+- **Abstained:** no result satisfies policy and no fallback was supplied; route it to a person or another system.
+- **Fallback:** no result satisfies policy, so SwiftDecision returns the fallback you explicitly provided.
+- **Thrown error:** invalid input, invalid backend output, provider errors, cancellation, and timeouts remain errors. They are not disguised as abstentions.
+
+Set independent thresholds for each decision kind:
+
+```swift
+let policies = DecisionPolicies(
+    noul: DecisionPolicy(minimumProbability: 0.7),
+    choice: DecisionPolicy(minimumProbability: 0.75, minimumConfidence: 0.1),
+    score: DecisionPolicy(minimumProbability: 0.6)
+)
+
+let engine = DecisionEngine(
+    backend: backend,
+    configuration: .init(policies: policies, timeout: 8)
+)
+```
+
+SwiftDecision validates that backend probabilities match the request, are finite and nonnegative, and are normalized. These checks protect the decision boundary. Evaluate model accuracy and tune thresholds and fallbacks on your own data.
+
+## Backends
+
+### TypeSafe Jev
+
+`JevDecisionBackend` calls the hosted TypeSafe System One API for Noul, Choice, and Score decisions. The instructions and context are sent to TypeSafe for inference. The backend reads `TYPESAFE_API_KEY` from the environment by default or accepts an explicit `apiKey`. It uses HTTPS, rejects redirects, does not log credentials, and excludes response bodies from errors. There are no automatic retries. Choice supports up to 255 options; Score supports 2–10 ordered levels.
+
+The HTTP transport is injectable. Unit tests use fixture request/response pairs and do not make network calls. To run the live Jev smoke test, set the API key and explicitly opt in; it sends three synthetic requests and may incur API usage:
+
+```sh
+SWIFTDECISION_LIVE_JEV=1 swift test --disable-default-traits --filter JevDecisionBackendTests
+```
+
+### Native Laya with MLX
+
+The non-default `MLX` SwiftPM Trait enables `LayaMLXBackend`, which runs the English `aac6fef/laya-mlx` checkpoint published by Convai Innovations locally with MLX. It does not invoke Python or download model weights at runtime. Provide a local checkpoint directory. The backend requires Apple Silicon, macOS 14+ or iOS 17+, and SwiftPM 6.3+. SwiftPM can still resolve or fetch optional packages during dependency resolution when the trait is disabled; the trait controls whether the MLX API and products are enabled for the target.
+
+Enable the trait in the consuming package:
+
+```swift
+.package(
+    url: "https://github.com/SoundBlaster/SwiftDecision.git",
+    from: "0.1.0",
+    traits: ["MLX"]
+)
+```
+
+Build and test the MLX configuration on Apple Silicon:
+
+```sh
+swift build --traits MLX --triple arm64-apple-macosx14.0
+swift test --traits MLX --triple arm64-apple-macosx14.0
+```
+
+For a local checkpoint smoke test, set `SWIFTDECISION_LAYA_CHECKPOINT` to its directory. For numerical parity against Python Laya-MLX, also provide `SWIFTDECISION_LAYA_REFERENCE_JSON` with fixed Noul, Choice, and Score reference outputs:
+
+Generate a reference file with the Python implementation and the same checkpoint:
+
+```sh
+python3 -m pip install laya-mlx
+python3 Scripts/generate_laya_reference.py \
+  --checkpoint /path/to/laya-mlx \
+  --output /path/to/laya-reference.json \
+  --dtype float16
+```
+
+```sh
+SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
+SWIFTDECISION_LAYA_REFERENCE_JSON=/path/to/laya-reference.json \
+SWIFTDECISION_LAYA_PRECISION=float16 \
+swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
+```
+
+The parity check requires matching selected option identifiers and compares probabilities within `0.0001` for FP32 or `0.02` for FP16. It verifies runtime compatibility for those test inputs, not model quality on arbitrary application data. See the [Laya MLX inference pipeline](Documentation/LayaMLXInferencePipeline.md) for the model input and native forward pass. The model weights are not redistributed; see [NOTICE](NOTICE) and the model card for terms.
+
+### Bring your own backend
+
+Implement `DecisionBackend` to connect another provider or an application-owned model. `ClosureDecisionBackend` is available for simple adapters, deterministic tests, and offline examples:
 
 ```swift
 let backend = ClosureDecisionBackend { prompt in
-    // Probabilities must correspond to prompt.options, in their original order.
-    DecisionPrediction(probabilities: [0.08, 0.92], modelIdentifier: "fixture")
-}
-let engine = DecisionEngine(backend: backend)
-
-let result = try await engine.noul(
-    statement: "Does the message require immediate action?",
-    context: "Production is unavailable for all customers."
-)
-
-switch result.outcome {
-case let .accepted(value): print("Decision: \(value), confidence: \(result.confidence)")
-case let .abstained(reason): print("Ask a person: \(reason)")
-case let .fallback(value, reason): print("Fallback: \(value), reason: \(reason)")
+    // Return one probability per prompt option, in the original order.
+    DecisionPrediction(probabilities: [0.08, 0.92], modelIdentifier: "my-provider")
 }
 ```
 
-Choice labels stay typed in application code, and Score returns both the most likely rubric level and probability-weighted expected value. Low-confidence results abstain unless the caller supplies an explicit fallback. Backend errors are thrown and are not converted to abstentions.
+## Traces and metrics
 
-`DecisionEngine.Configuration` owns the per-kind probability/confidence policies, optional inference timeout, and trace collection mode. Tracing is enabled by default for compatibility; disable event creation when a consumer does not need per-call traces:
+Tracing is enabled by default and records ordered, content-free stages and model identifiers. Disable event collection when a call site does not need a trace:
 
 ```swift
 let engine = DecisionEngine(
@@ -55,112 +202,45 @@ let engine = DecisionEngine(
 )
 ```
 
-An optional `DecisionMetricsHandler` receives one `DecisionMetric` per completed or failed decision call. Each metric contains only the decision kind, monotonic elapsed seconds, and status (`accepted`, `abstained`, `fallback`, or `failed`); it omits request identifiers, prompts, model outputs, and error text. The callback can be invoked concurrently, so it should be thread-safe and return promptly. SwiftDecision has no built-in exporter or telemetry dependency; applications can forward metrics to their own systems.
-
-Caller cancellation is checked around the Core decision adapter; timeout cancels the backend task. The default trace contains ordered stage names and model identifiers but never prompt text.
-
-## TypeSafe Jev backend
-
-`JevDecisionBackend` sends one typed Noul, Choice, or Score question to the [TypeSafe System One API](https://docs.typesafe.ai/). The decision context and instructions are sent to TypeSafe for inference. It reads `TYPESAFE_API_KEY` from the environment by default; an explicit `apiKey` initializer argument is also supported. The backend does not log credentials, follow redirects, retry requests, or include response bodies in errors. It uses the official HTTPS endpoint and requires network access. Choice supports up to 255 options; Score supports 2–10 ordered levels.
-
-```swift
-let backend = try JevDecisionBackend() // Reads TYPESAFE_API_KEY.
-let engine = DecisionEngine(backend: backend)
-
-let result = try await engine.choice(
-    instructions: "Choose the team that should handle this message.",
-    context: "My invoice contains a duplicate charge from yesterday.",
-    options: [
-        ChoiceOption(label: "support", description: "Account access or product use."),
-        ChoiceOption(label: "billing", description: "Invoices, refunds, or charges."),
-        ChoiceOption(label: "sales", description: "Plan selection or purchasing.")
-    ]
-)
-```
-
-The HTTP transport is injectable through `JevHTTPTransport`; the CI tests use fixture responses and make no network calls. To run the opt-in live smoke test for Noul, Choice, and Score, set `TYPESAFE_API_KEY` and explicitly enable it:
-
-```sh
-SWIFTDECISION_LIVE_JEV=1 swift test --disable-default-traits --filter JevDecisionBackendTests
-```
-
-This test sends three synthetic requests to TypeSafe and may incur API usage. It is skipped by default, including in CI.
-
-## Native Laya backend (optional)
-
-Enable the non-default `MLX` SwiftPM Trait in the consuming package declaration:
-
-```swift
-.package(
-    url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    branch: "main",
-    traits: ["MLX"]
-)
-```
-
-Or build this checkout directly:
-
-```sh
-swift build --traits MLX --triple arm64-apple-macosx14.0
-swift test --traits MLX --triple arm64-apple-macosx14.0
-```
-
-`LayaMLXBackend` loads a local English `aac6fef/laya-mlx` checkpoint and runs its ModernBERT encoder and typed-decision heads natively with MLX. It does not invoke Python. Download model files separately and provide their directory URL; CI compiles the backend without downloading model weights. MLX APIs are available only on macOS 14+ and iOS 17+, so the consuming app's deployment target must meet that floor when the trait is enabled. The CI command sets an explicit macOS 14 target triple for that lane while default builds retain the base package floors.
-
-For the request-to-probability flow, see the [Laya MLX Backend Inference Pipeline](Documentation/LayaMLXInferencePipeline.md).
-
-The model parameters are provided by Convai Innovations under the model card's terms. This repository does not redistribute weights. Laya prompt and output conventions are Apache-2.0-derived; see [NOTICE](NOTICE) and [LICENSE](LICENSE).
-
-Set `SWIFTDECISION_LAYA_CHECKPOINT` to a local checkpoint directory to run the native backend against fixed Noul, Choice, and Score prompts. This smoke test checks model identity and the shape and normalization of each probability response; it does not require Python or a network connection:
-
-```sh
-SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
-swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
-```
-
-For numerical parity, also set `SWIFTDECISION_LAYA_REFERENCE_JSON` to a JSON file containing Python Laya-MLX reference outputs for those prompts. The file has `noul`, `choice`, and `score` keys; each value contains `selectedOptionID` and `probabilities`. Then run:
-
-```sh
-python3 -m pip install laya-mlx
-python3 Scripts/generate_laya_reference.py \
-  --checkpoint /path/to/laya-mlx \
-  --output /path/to/laya-reference.json \
-  --dtype float16
-
-SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
-SWIFTDECISION_LAYA_REFERENCE_JSON=/path/to/reference.json \
-SWIFTDECISION_LAYA_PRECISION=float16 \
-swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
-```
-
-With a reference file, the suite requires exact selected option identifiers and compares probabilities within `0.0001` for FP32 or `0.02` for FP16. Generate the reference JSON using the Python Laya-MLX runtime with the same checkpoint; Python is used only as the parity oracle, never by the Swift backend. CI does not download weights and skips this local-checkpoint suite unless `SWIFTDECISION_LAYA_CHECKPOINT` is set. The regular CI suite uses deterministic request/response fixtures to cover typed decisions without model files.
+An optional `DecisionMetricsHandler` receives one measurement per completed or failed decision. Metrics contain decision kind, monotonic elapsed time, and status; they omit prompts, model outputs, request identifiers, and error text. The callback may run concurrently, so keep it thread-safe and fast. SwiftDecision does not include an exporter or telemetry dependency; applications can forward measurements to their own systems.
 
 ## Benchmarks
 
-Native Laya MLX and hosted TypeSafe Jev are the current model-backed inference backends. The local Laya parity suite measures output compatibility, not performance. TypeSafe Jev has an initial live latency sample below. The mock backend is included for examples and CI contract tests, not as a model benchmark.
+The current model-backed inference backends are hosted TypeSafe Jev and native Laya MLX. The mock backend is for examples and contract tests, not a model benchmark.
 
-| Backend | Example workloads | Correctness evidence | P50 / P95 latency | Throughput |
+| Backend | Example workload | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
-| Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Local Python parity passes in FP16 and FP32 | Not measured | Not measured |
-| TypeSafe Jev | Noul, Choice, and Score | Mock HTTP contract tests; opt-in live smoke test | Noul 264.7 / 307.4 ms; Choice 279.4 / 326.5 ms; Score 254.6 / 353.1 ms | Noul 3.677; Choice 3.527; Score 3.588 decisions/s |
-| `ClosureDecisionBackend` | Deterministic Noul, Choice, and Score fixtures | Request/response contract covered in CI | Not applicable | Not applicable |
-| Apple Foundation Models | Noul, Choice, and Score | Planned integration | — | — |
+| Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Optional local Python parity test in FP16 and FP32 | Not measured | Not measured |
+| TypeSafe Jev | Noul, Choice, Score | Fixture contract tests and opt-in live smoke test | Noul 264.7 / 307.4 ms; Choice 279.4 / 326.5 ms; Score 254.6 / 353.1 ms | Noul 3.677; Choice 3.527; Score 3.588 decisions/s |
+| `ClosureDecisionBackend` | Deterministic Noul, Choice, Score fixtures | Request/response contracts covered in CI | Not applicable | Not applicable |
 
-The Jev figures are one sequential live run from 2026-09-21 with 20 measured requests per decision kind and one warm-up request per kind (63 requests total), using model identifier `jev-1.13.0` on macOS 27.0 (build 26A428), arm64, and Swift 6.4. Latency covers the full `DecisionEngine` call, including network and provider inference; throughput is measured calls divided by summed latency. P50 is the median (the average of the two middle samples for this even-sized run); P95 uses nearest rank. These are a dated sample of a hosted service, not a hardware-independent performance guarantee. The runner prints raw samples and system details for repeatable comparisons.
-
-Run the opt-in live benchmark with `TYPESAFE_API_KEY` set. It requires the explicit environment opt-in below and sends billable live requests; the default CI does not run it. The sample count must be between 10 and 100 per decision kind.
+The Jev figures are a single sequential live run from 2026-09-21: 20 measured requests per decision kind plus one warm-up request per kind (63 requests total), using model `jev-1.13.0` on macOS 27.0 (build 26A428), arm64, and Swift 6.4. Latency covers the complete `DecisionEngine` call, including network and provider inference. P50 is the median; P95 uses nearest rank. These numbers are a dated sample, not a performance guarantee. Re-run the benchmark to collect raw samples for your environment:
 
 ```sh
 SWIFTDECISION_RUN_JEV_BENCHMARKS=1 swift run --disable-default-traits JevBenchmark --samples 20
 ```
 
-## Build and test
+This sends live requests and may incur API usage. Set `TYPESAFE_API_KEY`; sample count must be between 10 and 100 per decision kind. CI never runs the live benchmark.
+
+## Requirements and validation
+
+- Swift tools 6.3 or newer.
+- Base package deployment targets: macOS 10.15, iOS 13, tvOS 13, and watchOS 6.
+- Native MLX backend: Apple Silicon, macOS 14+ or iOS 17+, and the `MLX` trait.
+
+Build and test without optional traits:
 
 ```sh
 swift build --disable-default-traits
 swift test --disable-default-traits
-swift build --traits MLX --triple arm64-apple-macosx14.0
-swift test --traits MLX --triple arm64-apple-macosx14.0
 ```
 
-CI checks Swift 6.4 on GitHub's Xcode 27 preview runner and Swift 6.3.3 as the minimum stable compiler for the Swift tools 6.3 manifest. The MLX lane also uses Apple Silicon and never downloads a checkpoint.
+CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights.
+
+## Scope of 0.1.0
+
+SwiftDecision 0.1.0 provides typed Noul, Choice, and Score primitives, a hosted Jev backend, an opt-in native Laya MLX backend, and a backend protocol for integrations. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in this release.
+
+## License
+
+SwiftDecision is available under the [Apache License 2.0](LICENSE). Model weights have their own terms and are not included in this repository.
