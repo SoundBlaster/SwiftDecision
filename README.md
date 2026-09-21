@@ -174,6 +174,7 @@ python3 Scripts/generate_laya_reference.py \
 ```sh
 SWIFTDECISION_LAYA_CHECKPOINT=/path/to/laya-mlx \
 SWIFTDECISION_LAYA_REFERENCE_JSON=/path/to/laya-reference.json \
+SWIFTDECISION_LAYA_PRECISION=float16 \
 swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
 ```
 
