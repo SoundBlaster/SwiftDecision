@@ -1,6 +1,6 @@
 #if SWIFTDECISION_MLX
 import Foundation
-import SwiftDecision
+@testable import SwiftDecision
 import XCTest
 
 @available(macOS 14, iOS 17, *)
@@ -14,6 +14,20 @@ final class LayaParityTests: XCTestCase {
     private struct ReferenceCase: Decodable {
         let selectedOptionID: String
         let probabilities: [Double]
+    }
+
+    func testOptionTokenBudgetTruncatesAndRejectsOversizedOptionSets() throws {
+        let source = (0 ..< 4).map { [$0] + Array(repeating: 99, count: 20) }
+        let fitted = try LayaOptionTokenBudget.fit(source, headMaximumLength: 24)
+
+        XCTAssertLessThanOrEqual(fitted.reduce(0) { $0 + $1.count }, 8)
+        XCTAssertEqual(fitted.map(\.first), source.map(\.first))
+        XCTAssertTrue(fitted.allSatisfy { !$0.isEmpty })
+
+        XCTAssertThrowsError(try LayaOptionTokenBudget.fit(
+            Array(repeating: [1], count: 9),
+            headMaximumLength: 24
+        ))
     }
 
     func testFixedNoulChoiceAndScoreInputsMatchPythonLayaReference() async throws {

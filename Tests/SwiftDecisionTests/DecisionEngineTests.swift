@@ -142,4 +142,79 @@ final class DecisionEngineTests: XCTestCase {
             XCTAssertEqual(error, .timedOut)
         }
     }
+
+    func testTimeoutReturnsBeforeCancellationInsensitiveBackendCompletes() async throws {
+        let suspendedBackend = SuspendedDecisionPrediction()
+        let engine = DecisionEngine(
+            backend: ClosureDecisionBackend { _ in await suspendedBackend.predict() },
+            configuration: .init(timeout: 0.01)
+        )
+        let decision = Task {
+            try await engine.noul(statement: "Check this.", context: "A fact")
+        }
+        await suspendedBackend.waitUntilStarted()
+
+        let releaseIfBlocked = Task.detached {
+            do { try await Task.sleep(for: .seconds(1)) }
+            catch { return }
+            await suspendedBackend.release()
+        }
+        let start = ContinuousClock.now
+        do {
+            _ = try await decision.value
+            XCTFail("Expected timeout")
+        } catch let error as DecisionError {
+            XCTAssertEqual(error, .timedOut)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+        let elapsed = start.duration(to: .now)
+
+        await suspendedBackend.release()
+        releaseIfBlocked.cancel()
+        await suspendedBackend.waitUntilCompleted()
+        XCTAssertLessThan(elapsed, .milliseconds(500))
+    }
+}
+
+private actor SuspendedDecisionPrediction {
+    private var predictionContinuation: CheckedContinuation<DecisionPrediction, Never>?
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var completionWaiters: [CheckedContinuation<Void, Never>] = []
+    private var hasStarted = false
+    private var hasCompleted = false
+
+    func predict() async -> DecisionPrediction {
+        let prediction = await withCheckedContinuation { continuation in
+            predictionContinuation = continuation
+            hasStarted = true
+            let waiters = startWaiters
+            startWaiters.removeAll()
+            waiters.forEach { $0.resume() }
+        }
+        hasCompleted = true
+        let waiters = completionWaiters
+        completionWaiters.removeAll()
+        waiters.forEach { $0.resume() }
+        return prediction
+    }
+
+    func waitUntilStarted() async {
+        guard !hasStarted else { return }
+        await withCheckedContinuation { startWaiters.append($0) }
+    }
+
+    func release() {
+        guard let predictionContinuation else { return }
+        self.predictionContinuation = nil
+        predictionContinuation.resume(returning: DecisionPrediction(
+            probabilities: [0.1, 0.9],
+            modelIdentifier: "released"
+        ))
+    }
+
+    func waitUntilCompleted() async {
+        guard !hasCompleted else { return }
+        await withCheckedContinuation { completionWaiters.append($0) }
+    }
 }

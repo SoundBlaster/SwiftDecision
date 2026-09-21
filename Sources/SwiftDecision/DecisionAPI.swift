@@ -255,6 +255,93 @@ public enum DecisionError: Error, Sendable, Equatable, CustomStringConvertible {
     }
 }
 
+/// Races an operation against a deadline without waiting for a cancelled child task to finish.
+private final class DecisionTimeoutRace<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Value, Error>?
+    private var operationTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
+    private var isResolved = false
+
+    func value(
+        timeout: TimeInterval,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        let nanoseconds = UInt64(min(timeout * 1_000_000_000, Double(Int64.max)))
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                guard install(continuation) else { return }
+
+                let operationTask = Task.detached {
+                    do {
+                        self.resolve(.success(try await operation()))
+                    } catch {
+                        self.resolve(.failure(error))
+                    }
+                }
+                let timeoutTask = Task.detached {
+                    do {
+                        try await Task.sleep(nanoseconds: nanoseconds)
+                    } catch {
+                        return
+                    }
+                    self.resolve(.failure(DecisionError.timedOut))
+                }
+                install(operationTask: operationTask, timeoutTask: timeoutTask)
+            }
+        } onCancel: {
+            resolve(.failure(CancellationError()))
+        }
+    }
+
+    private func install(_ continuation: CheckedContinuation<Value, Error>) -> Bool {
+        lock.lock()
+        guard !isResolved else {
+            lock.unlock()
+            continuation.resume(throwing: CancellationError())
+            return false
+        }
+        self.continuation = continuation
+        lock.unlock()
+        return true
+    }
+
+    private func install(operationTask: Task<Void, Never>, timeoutTask: Task<Void, Never>) {
+        lock.lock()
+        let alreadyResolved = isResolved
+        if !alreadyResolved {
+            self.operationTask = operationTask
+            self.timeoutTask = timeoutTask
+        }
+        lock.unlock()
+
+        if alreadyResolved {
+            operationTask.cancel()
+            timeoutTask.cancel()
+        }
+    }
+
+    private func resolve(_ result: Result<Value, Error>) {
+        lock.lock()
+        guard !isResolved else {
+            lock.unlock()
+            return
+        }
+        isResolved = true
+        let continuation = self.continuation
+        self.continuation = nil
+        let operationTask = self.operationTask
+        self.operationTask = nil
+        let timeoutTask = self.timeoutTask
+        self.timeoutTask = nil
+        lock.unlock()
+
+        operationTask?.cancel()
+        timeoutTask?.cancel()
+        continuation?.resume(with: result)
+    }
+}
+
 /// Orchestrates validated asynchronous model decisions through SpecificationCore.
 public struct DecisionEngine: Sendable {
     /// Runtime configuration owned by SwiftDecision.
@@ -416,18 +503,8 @@ public struct DecisionEngine: Sendable {
 
         let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, timeout = configuration.timeout] request in
             if let timeout {
-                return try await withThrowingTaskGroup(of: DecisionPrediction.self) { group in
-                    group.addTask { try await backend.predict(for: request) }
-                    group.addTask {
-                        let nanoseconds = UInt64(min(timeout * 1_000_000_000, Double(Int64.max)))
-                        try await Task.sleep(nanoseconds: nanoseconds)
-                        throw DecisionError.timedOut
-                    }
-                    defer { group.cancelAll() }
-                    guard let first = try await group.next() else {
-                        throw DecisionError.timedOut
-                    }
-                    return first
+                return try await DecisionTimeoutRace<DecisionPrediction>().value(timeout: timeout) {
+                    try await backend.predict(for: request)
                 }
             }
             return try await backend.predict(for: request)

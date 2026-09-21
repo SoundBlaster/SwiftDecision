@@ -34,6 +34,50 @@ public enum LayaMLXError: Error, Sendable, CustomStringConvertible {
     }
 }
 
+enum LayaOptionTokenBudget {
+    static let reservedInstructionTokens = 16
+
+    static func fit(_ optionTokens: [[Int]], headMaximumLength: Int) throws -> [[Int]] {
+        guard optionTokens.count >= 2, optionTokens.allSatisfy({ !$0.isEmpty }) else {
+            throw DecisionError.invalidRequest("Laya requires at least two nonempty option token sequences")
+        }
+
+        guard headMaximumLength >= reservedInstructionTokens else {
+            throw DecisionError.invalidRequest("the Laya head token budget is too small")
+        }
+        let availableOptionTokens = headMaximumLength - reservedInstructionTokens
+        guard availableOptionTokens >= optionTokens.count else {
+            throw DecisionError.invalidRequest("too many options for the Laya head token budget")
+        }
+
+        var totalOptionTokens = 0
+        var exceedsBudget = false
+        for tokens in optionTokens {
+            if tokens.count > availableOptionTokens - totalOptionTokens {
+                exceedsBudget = true
+                break
+            }
+            totalOptionTokens += tokens.count
+        }
+        guard exceedsBudget else { return optionTokens }
+
+        var fittedLengths = Array(repeating: 1, count: optionTokens.count)
+        var remainingTokens = availableOptionTokens - optionTokens.count
+        while remainingTokens > 0 {
+            var didAllocate = false
+            for index in optionTokens.indices where fittedLengths[index] < optionTokens[index].count {
+                fittedLengths[index] += 1
+                remainingTokens -= 1
+                didAllocate = true
+                if remainingTokens == 0 { break }
+            }
+            if !didAllocate { break }
+        }
+
+        return zip(optionTokens, fittedLengths).map { Array($0.prefix($1)) }
+    }
+}
+
 /// Native, on-device MLX inference for the English `aac6fef/laya-mlx` checkpoint.
 ///
 /// The checkpoint is loaded from disk and is never downloaded implicitly. Construct this backend
@@ -238,33 +282,31 @@ private struct LayaRuntime {
         let type = kind.rawValue
         let safeMask = tokenizer.convertIdToToken(maskID) ?? "[MASK]"
         let headIDs = tokenizer.encode(text: "\(type) question: \(instructions.replacingOccurrences(of: safeMask, with: " "))", addSpecialTokens: false)
-        var optionIDs = options.map { option in
+        let optionIDs = try LayaOptionTokenBudget.fit(options.map { option in
             [maskID] + tokenizer.encode(
                 text: " " + option.replacingOccurrences(of: safeMask, with: " "),
                 addSpecialTokens: false
             ).prefix(48)
-        }
-        var optionBudget = agent.headMaximumLength - optionIDs.reduce(0) { $0 + $1.count }
-        if optionBudget < 16 {
-            let perOptionLimit = max(4, (agent.headMaximumLength - 16) / max(1, optionIDs.count))
-            optionIDs = optionIDs.map { Array($0.prefix(perOptionLimit)) }
-            optionBudget = agent.headMaximumLength - optionIDs.reduce(0) { $0 + $1.count }
-        }
-        let truncatedHead = Array(headIDs.prefix(max(8, optionBudget)))
-        var ids = [Int32(clsID)] + truncatedHead.map(Int32.init) + [Int32(separatorID)]
+        }, headMaximumLength: agent.headMaximumLength)
+        let usedOptionTokens = optionIDs.reduce(0) { $0 + $1.count }
+        let instructionTokenBudget = agent.headMaximumLength - usedOptionTokens
+        let truncatedHead = Array(headIDs.prefix(instructionTokenBudget))
+        var ids = [Int32(clsID)]
+        ids.append(contentsOf: truncatedHead.map(Int32.init))
+        ids.append(Int32(separatorID))
         var markers: [Int] = []
         for option in optionIDs {
             markers.append(ids.count)
             ids.append(contentsOf: option.map(Int32.init))
         }
         ids.append(Int32(separatorID))
-        let room = max(0, agent.maximumLength - ids.count - 1)
+        guard ids.count < agent.maximumLength else {
+            throw DecisionError.invalidRequest("decision head and options exceed the model's maximum sequence length")
+        }
+        let room = agent.maximumLength - ids.count - 1
         let state = context.replacingOccurrences(of: safeMask, with: " ")
         ids.append(contentsOf: tokenizer.encode(text: state, addSpecialTokens: false).prefix(room).map(Int32.init))
         ids.append(Int32(separatorID))
-        guard markers.count == options.count else {
-            throw LayaMLXError.invalidCheckpoint("the prompt exceeds the checkpoint's option token budget")
-        }
         return (ids, markers)
     }
 
