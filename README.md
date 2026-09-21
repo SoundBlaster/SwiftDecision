@@ -11,7 +11,7 @@
 
 SwiftDecision gives applications a small, composable decision layer for AI-powered classification, routing, yes/no checks, and rubric scoring. Ask a model to choose from your options; get a typed value with its probabilities, confidence, and an explicit outcome. If a result does not meet your policy, SwiftDecision can abstain or return your chosen fallback.
 
-Connect the hosted [TypeSafe Jev](https://docs.typesafe.ai/) API, run the English Laya model locally with native Apple MLX, or provide your own backend. [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) powers request and output validation, ordered policy routing, and decision composition inside the package.
+Use hosted providers such as [SwiftJev](https://github.com/SoundBlaster/SwiftJev), run the English Laya model locally with native Apple MLX, or provide your own backend. [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) powers request and output validation, ordered policy routing, and decision composition inside the package.
 
 **Models propose. Your application keeps control of policy and action.**
 
@@ -33,7 +33,7 @@ In your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.1.0")
+    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.2.0")
 ],
 ```
 
@@ -63,7 +63,9 @@ enum InboxRoute: Sendable, Hashable {
 @main
 struct InboxTriage {
     static func main() async throws {
-        let backend = try JevDecisionBackend() // Reads TYPESAFE_API_KEY.
+        let backend = ClosureDecisionBackend { _ in
+            DecisionPrediction(probabilities: [0.05, 0.95], modelIdentifier: "fixture")
+        }
         let engine = DecisionEngine(
             backend: backend,
             configuration: .init(timeout: 8)
@@ -128,15 +130,9 @@ SwiftDecision validates that backend probabilities match the request, are finite
 
 ## Backends
 
-### TypeSafe Jev
+### Hosted providers
 
-`JevDecisionBackend` calls the hosted TypeSafe System One API for Noul, Choice, and Score decisions. The instructions and context are sent to TypeSafe for inference. The backend reads `TYPESAFE_API_KEY` from the environment by default or accepts an explicit `apiKey`. It uses HTTPS, rejects redirects, does not log credentials, and excludes response bodies from errors. There are no automatic retries. Choice supports up to 255 options; Score supports 2–10 ordered levels.
-
-The HTTP transport is injectable. Unit tests use fixture request/response pairs and do not make network calls. To run the live Jev smoke test, set the API key and explicitly opt in; it sends three synthetic requests and may incur API usage:
-
-```sh
-SWIFTDECISION_LIVE_JEV=1 swift test --disable-default-traits --filter JevDecisionBackendTests
-```
+TypeSafe Jev is available as the separate [`SwiftJev`](https://github.com/SoundBlaster/SwiftJev) package. It conforms to `DecisionBackend` and keeps the hosted provider and HTTP transport outside the core decision library.
 
 ### Native Laya with MLX
 
@@ -147,7 +143,7 @@ Enable the trait in the consuming package:
 ```swift
 .package(
     url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    from: "0.1.0",
+    from: "0.2.0",
     traits: ["MLX"]
 )
 ```
@@ -206,21 +202,12 @@ An optional `DecisionMetricsHandler` receives one measurement per completed or f
 
 ## Benchmarks
 
-The current model-backed inference backends are hosted TypeSafe Jev and native Laya MLX. The mock backend is for examples and contract tests, not a model benchmark.
+The current model-backed inference backend included in this package is native Laya MLX. Hosted providers such as TypeSafe Jev are maintained as separate provider packages. The mock backend is for examples and contract tests, not a model benchmark.
 
 | Backend | Example workload | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
 | Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Optional local Python parity test in FP16 and FP32 | Not measured | Not measured |
-| TypeSafe Jev | Noul, Choice, Score | Fixture contract tests and opt-in live smoke test | Noul 264.7 / 307.4 ms; Choice 279.4 / 326.5 ms; Score 254.6 / 353.1 ms | Noul 3.677; Choice 3.527; Score 3.588 decisions/s |
 | `ClosureDecisionBackend` | Deterministic Noul, Choice, Score fixtures | Request/response contracts covered in CI | Not applicable | Not applicable |
-
-The Jev figures are a single sequential live run from 2026-09-21: 20 measured requests per decision kind plus one warm-up request per kind (63 requests total), using model `jev-1.13.0` on macOS 27.0 (build 26A428), arm64, and Swift 6.4. Latency covers the complete `DecisionEngine` call, including network and provider inference. P50 is the median; P95 uses nearest rank. These numbers are a dated sample, not a performance guarantee. Re-run the benchmark to collect raw samples for your environment:
-
-```sh
-SWIFTDECISION_RUN_JEV_BENCHMARKS=1 swift run --disable-default-traits JevBenchmark --samples 20
-```
-
-This sends live requests and may incur API usage. Set `TYPESAFE_API_KEY`; sample count must be between 10 and 100 per decision kind. CI never runs the live benchmark.
 
 ## Requirements and validation
 
@@ -237,9 +224,9 @@ swift test --disable-default-traits
 
 CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights.
 
-## Scope of 0.1.0
+## Scope of 0.2.0
 
-SwiftDecision 0.1.0 provides typed Noul, Choice, and Score primitives, a hosted Jev backend, an opt-in native Laya MLX backend, and a backend protocol for integrations. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in this release.
+SwiftDecision 0.2.0 provides typed Noul, Choice, and Score primitives, an opt-in native Laya MLX backend, and a backend protocol for integrations. Hosted providers are separate packages, including SwiftJev. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in this release.
 
 ## License
 
