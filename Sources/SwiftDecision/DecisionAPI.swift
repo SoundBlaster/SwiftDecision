@@ -138,6 +138,15 @@ public struct DecisionPolicies: Sendable, Hashable {
     fileprivate var isValid: Bool { noul.isValid && choice.isValid && score.isValid }
 }
 
+/// Controls whether an engine records per-decision trace events.
+public enum DecisionTraceMode: Sendable, Hashable {
+    /// Collect the ordered trace returned in each decision result.
+    case enabled
+
+    /// Return an empty trace without creating timestamped events.
+    case disabled
+}
+
 /// A stable, content-free event emitted while a decision is evaluated.
 public struct DecisionTraceEvent: Sendable, Hashable {
     /// The stage that completed.
@@ -165,6 +174,46 @@ public struct DecisionTraceEvent: Sendable, Hashable {
         self.detail = detail
     }
 }
+
+/// A content-free measurement for one completed or failed decision call.
+public struct DecisionMetric: Sendable, Hashable {
+    /// The final state of the decision call.
+    public enum Status: String, Sendable, Hashable {
+        /// The result satisfied the selected policy.
+        case accepted
+
+        /// The result abstained because it did not satisfy the selected policy.
+        case abstained
+
+        /// The fallback value was returned because the result did not satisfy policy.
+        case fallback
+
+        /// The call threw an error.
+        case failed
+    }
+
+    /// Kind of decision evaluated.
+    public let kind: DecisionKind
+
+    /// Elapsed monotonic time for validation, inference, and result mapping, in seconds.
+    public let durationSeconds: TimeInterval
+
+    /// Final status of the decision call.
+    public let status: Status
+
+    fileprivate init(kind: DecisionKind, durationSeconds: TimeInterval, status: Status) {
+        self.kind = kind
+        self.durationSeconds = durationSeconds
+        self.status = status
+    }
+}
+
+/// A synchronous, sendable callback for receiving per-decision measurements.
+///
+/// The callback can be invoked concurrently by simultaneous decisions. Implementations should be
+/// thread-safe and return promptly; enqueue work when forwarding measurements to an asynchronous sink.
+/// Its execution time is not included in ``DecisionMetric/durationSeconds``.
+public typealias DecisionMetricsHandler = @Sendable (DecisionMetric) -> Void
 
 /// The final state of a typed decision.
 public enum DecisionOutcome<Value: Sendable>: Sendable {
@@ -352,20 +401,44 @@ public struct DecisionEngine: Sendable {
         /// Optional upper bound for one inference call.
         public let timeout: TimeInterval?
 
+        /// Whether successful results collect timestamped trace events.
+        public let traceMode: DecisionTraceMode
+
         /// Creates runtime configuration.
-        public init(policies: DecisionPolicies = DecisionPolicies(), timeout: TimeInterval? = nil) {
+        ///
+        /// - Parameters:
+        ///   - policies: Per-kind thresholds used to accept or reject predictions.
+        ///   - timeout: Optional upper bound for backend inference.
+        ///   - traceMode: Whether to collect trace events in successful results.
+        public init(
+            policies: DecisionPolicies = DecisionPolicies(),
+            timeout: TimeInterval? = nil,
+            traceMode: DecisionTraceMode = .enabled
+        ) {
             self.policies = policies
             self.timeout = timeout
+            self.traceMode = traceMode
         }
     }
 
     private let backend: any DecisionBackend
     private let configuration: Configuration
+    private let metricsHandler: DecisionMetricsHandler?
 
     /// Creates an engine around any asynchronous decision backend.
-    public init(backend: some DecisionBackend, configuration: Configuration = Configuration()) {
+    ///
+    /// - Parameters:
+    ///   - backend: Provider used to produce decision predictions.
+    ///   - configuration: Runtime policies, timeout, and trace collection mode.
+    ///   - metricsHandler: Optional callback for content-free measurements of completed or failed calls.
+    public init(
+        backend: some DecisionBackend,
+        configuration: Configuration = Configuration(),
+        metricsHandler: DecisionMetricsHandler? = nil
+    ) {
         self.backend = backend
         self.configuration = configuration
+        self.metricsHandler = metricsHandler
     }
 
     /// Evaluates a boolean statement using the fixed option order `[false, true]`.
@@ -375,18 +448,20 @@ public struct DecisionEngine: Sendable {
         context: String,
         fallback: Bool? = nil
     ) async throws -> DecisionResult<Bool> {
-        let prompt = DecisionPrompt(
-            id: id,
-            kind: .noul,
-            instructions: statement,
-            context: context,
-            options: [
-                DecisionOption(id: "false", description: "false: no, the statement does not hold"),
-                DecisionOption(id: "true", description: "true: yes, the statement holds")
-            ]
-        )
-        let value = try await evaluate(prompt, fallbackIndex: fallback.map { $0 ? 1 : 0 })
-        return map(value) { $0 == 1 }
+        try await withMetrics(for: .noul) {
+            let prompt = DecisionPrompt(
+                id: id,
+                kind: .noul,
+                instructions: statement,
+                context: context,
+                options: [
+                    DecisionOption(id: "false", description: "false: no, the statement does not hold"),
+                    DecisionOption(id: "true", description: "true: yes, the statement holds")
+                ]
+            )
+            let value = try await evaluate(prompt, fallbackIndex: fallback.map { $0 ? 1 : 0 })
+            return map(value) { $0 == 1 }
+        }
     }
 
     /// Selects one typed label while preserving the caller's option order.
@@ -397,29 +472,31 @@ public struct DecisionEngine: Sendable {
         options: [ChoiceOption<Label>],
         fallback: Label? = nil
     ) async throws -> DecisionResult<Label> {
-        guard Set(options.map(\.label)).count == options.count else {
-            throw DecisionError.invalidRequest("choice labels must be unique")
-        }
-        let prompt = DecisionPrompt(
-            id: id,
-            kind: .choice,
-            instructions: instructions,
-            context: context,
-            options: options.enumerated().map {
-                DecisionOption(id: String($0.offset), description: $0.element.description)
+        try await withMetrics(for: .choice) {
+            guard Set(options.map(\.label)).count == options.count else {
+                throw DecisionError.invalidRequest("choice labels must be unique")
             }
-        )
-        let fallbackIndex: Int?
-        if let fallback {
-            guard let index = options.firstIndex(where: { $0.label == fallback }) else {
-                throw DecisionError.invalidRequest("fallback label must match one of the configured options")
+            let prompt = DecisionPrompt(
+                id: id,
+                kind: .choice,
+                instructions: instructions,
+                context: context,
+                options: options.enumerated().map {
+                    DecisionOption(id: String($0.offset), description: $0.element.description)
+                }
+            )
+            let fallbackIndex: Int?
+            if let fallback {
+                guard let index = options.firstIndex(where: { $0.label == fallback }) else {
+                    throw DecisionError.invalidRequest("fallback label must match one of the configured options")
+                }
+                fallbackIndex = index
+            } else {
+                fallbackIndex = nil
             }
-            fallbackIndex = index
-        } else {
-            fallbackIndex = nil
+            let selected = try await evaluate(prompt, fallbackIndex: fallbackIndex)
+            return map(selected) { options[$0].label }
         }
-        let selected = try await evaluate(prompt, fallbackIndex: fallbackIndex)
-        return map(selected) { options[$0].label }
     }
 
     /// Scores context against ordered rubric levels and returns the expected numeric value.
@@ -430,41 +507,76 @@ public struct DecisionEngine: Sendable {
         levels: [(description: String, value: Double)],
         fallback: ScoreValue? = nil
     ) async throws -> DecisionResult<ScoreValue> {
-        guard levels.count >= 2, levels.allSatisfy({ $0.value.isFinite }) else {
-            throw DecisionError.invalidRequest("score requires at least two levels with finite numeric values")
-        }
-        if let fallback, !levels.indices.contains(fallback.level) {
-            throw DecisionError.invalidRequest("fallback score level is out of range")
-        }
-        let prompt = DecisionPrompt(
-            id: id,
-            kind: .score,
-            instructions: instructions,
-            context: context,
-            options: levels.enumerated().map {
-                DecisionOption(id: String($0.offset), description: "level \($0.offset): \($0.element.description)")
+        try await withMetrics(for: .score) {
+            guard levels.count >= 2, levels.allSatisfy({ $0.value.isFinite }) else {
+                throw DecisionError.invalidRequest("score requires at least two levels with finite numeric values")
             }
-        )
-        let evaluated = try await evaluate(prompt, fallbackIndex: fallback.map(\.level))
-        let mappedOutcome = mapOutcome(evaluated.outcome) { index in
+            if let fallback, !levels.indices.contains(fallback.level) {
+                throw DecisionError.invalidRequest("fallback score level is out of range")
+            }
+            let prompt = DecisionPrompt(
+                id: id,
+                kind: .score,
+                instructions: instructions,
+                context: context,
+                options: levels.enumerated().map {
+                    DecisionOption(id: String($0.offset), description: "level \($0.offset): \($0.element.description)")
+                }
+            )
+            let evaluated = try await evaluate(prompt, fallbackIndex: fallback.map(\.level))
+            let mappedOutcome = mapOutcome(evaluated.outcome) { index in
                 ScoreValue(
                     level: index,
                     expectedValue: zip(levels, evaluated.probabilities)
                         .reduce(0) { $0 + $1.0.value * $1.1 }
                 )
             }
-        let outcome: DecisionOutcome<ScoreValue>
-        if case let .fallback(_, reason) = mappedOutcome, let fallback {
-            outcome = .fallback(fallback, reason: reason)
-        } else {
-            outcome = mappedOutcome
+            let outcome: DecisionOutcome<ScoreValue>
+            if case let .fallback(_, reason) = mappedOutcome, let fallback {
+                outcome = .fallback(fallback, reason: reason)
+            } else {
+                outcome = mappedOutcome
+            }
+            return DecisionResult(
+                outcome: outcome,
+                confidence: evaluated.confidence,
+                probabilities: evaluated.probabilities,
+                trace: evaluated.trace
+            )
         }
-        return DecisionResult(
-            outcome: outcome,
-            confidence: evaluated.confidence,
-            probabilities: evaluated.probabilities,
-            trace: evaluated.trace
-        )
+    }
+
+    private func withMetrics<Value: Sendable>(
+        for kind: DecisionKind,
+        operation: () async throws -> DecisionResult<Value>
+    ) async throws -> DecisionResult<Value> {
+        guard let metricsHandler else { return try await operation() }
+
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        do {
+            let result = try await operation()
+            metricsHandler(DecisionMetric(
+                kind: kind,
+                durationSeconds: max(ProcessInfo.processInfo.systemUptime - startedAt, 0),
+                status: metricStatus(for: result.outcome)
+            ))
+            return result
+        } catch {
+            metricsHandler(DecisionMetric(
+                kind: kind,
+                durationSeconds: max(ProcessInfo.processInfo.systemUptime - startedAt, 0),
+                status: .failed
+            ))
+            throw error
+        }
+    }
+
+    private func metricStatus<Value: Sendable>(for outcome: DecisionOutcome<Value>) -> DecisionMetric.Status {
+        switch outcome {
+        case .accepted: .accepted
+        case .abstained: .abstained
+        case .fallback: .fallback
+        }
     }
 
     private func evaluate(
@@ -490,7 +602,8 @@ public struct DecisionEngine: Sendable {
             throw DecisionError.invalidRequest("id, instructions, context, and at least two unique options are required")
         }
 
-        var trace = [DecisionTraceEvent(.requestValidated)]
+        var trace = DecisionTraceCollector(mode: configuration.traceMode)
+        trace.record(.requestValidated)
         let policyRouter = AsyncFirstMatchSpec<DecisionKind, DecisionPolicy>.builder()
             .addPredicate({ $0 == .noul }, result: configuration.policies.noul)
             .addPredicate({ $0 == .choice }, result: configuration.policies.choice)
@@ -499,7 +612,7 @@ public struct DecisionEngine: Sendable {
         guard let policy = try await policyRouter.decide(prompt.kind) else {
             throw DecisionError.noPolicySelected
         }
-        trace.append(DecisionTraceEvent(.policySelected, detail: prompt.kind.rawValue))
+        trace.record(.policySelected, detail: prompt.kind.rawValue)
 
         let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, timeout = configuration.timeout] request in
             if let timeout {
@@ -509,11 +622,11 @@ public struct DecisionEngine: Sendable {
             }
             return try await backend.predict(for: request)
         }
-        trace.append(DecisionTraceEvent(.inferenceStarted, detail: "\(prompt.options.count) options"))
+        trace.record(.inferenceStarted, detail: "\(prompt.options.count) options")
         guard let prediction = try await backendDecision.decide(prompt) else {
             throw DecisionError.invalidPrediction("backend returned no result")
         }
-        trace.append(DecisionTraceEvent(.inferenceCompleted, detail: prediction.modelIdentifier))
+        trace.record(.inferenceCompleted, detail: prediction.modelIdentifier)
 
         let predictionIsValid = AnyAsyncSpecification<DecisionPrediction> { output in
             output.probabilities.count == prompt.options.count
@@ -523,7 +636,7 @@ public struct DecisionEngine: Sendable {
         guard try await predictionIsValid.isSatisfiedBy(prediction) else {
             throw DecisionError.invalidPrediction("expected \(prompt.options.count) finite, nonnegative probabilities summing to 1")
         }
-        trace.append(DecisionTraceEvent(.outputValidated))
+        trace.record(.outputValidated)
 
         let selectedIndex = prediction.probabilities.indices.max {
             prediction.probabilities[$0] < prediction.probabilities[$1]
@@ -542,12 +655,12 @@ public struct DecisionEngine: Sendable {
         } else {
             outcome = .abstained(reason: reason)
         }
-        trace.append(DecisionTraceEvent(.resolved, detail: outcomeName(outcome)))
+        trace.record(.resolved, detail: outcomeName(outcome))
         return DecisionResult(
             outcome: outcome,
             confidence: confidence,
             probabilities: prediction.probabilities,
-            trace: trace
+            trace: trace.events
         )
     }
 
@@ -588,5 +701,19 @@ public struct DecisionEngine: Sendable {
             probability > 0 ? partial + probability * log(probability) : partial
         }
         return min(max(1 - entropy / log(Double(probabilities.count)), 0), 1)
+    }
+}
+
+private struct DecisionTraceCollector {
+    private let mode: DecisionTraceMode
+    private(set) var events: [DecisionTraceEvent] = []
+
+    init(mode: DecisionTraceMode) {
+        self.mode = mode
+    }
+
+    mutating func record(_ stage: DecisionTraceEvent.Stage, detail: String? = nil) {
+        guard mode == .enabled else { return }
+        events.append(DecisionTraceEvent(stage, detail: detail))
     }
 }
