@@ -1,5 +1,11 @@
 # SwiftDecision
 
+[![CI](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml)
+[![Swift 6.3+](https://img.shields.io/badge/Swift-6.3%2B-orange?logo=swift)](https://www.swift.org)
+![Apple platforms](https://img.shields.io/badge/Apple%20platforms-macOS%2010.15%2B%20%7C%20iOS%2013%2B%20%7C%20tvOS%2013%2B%20%7C%20watchOS%206%2B-lightgrey?logo=apple)
+![Optional MLX trait](https://img.shields.io/badge/MLX-optional%20trait-6e56cf?logo=apple)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 SwiftDecision provides typed asynchronous Noul, Choice, and Score decisions over interchangeable model backends. It uses [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) internally for async request/output validation, ordered policy routing, and backend decision composition.
 
 The base package has no model downloads and keeps the package deployment floors at macOS 10.15, iOS 13, tvOS 13, and watchOS 6. The optional native MLX backend requires macOS 14 or iOS 17 and an Apple Silicon device. TypeSafe Jev and Apple Foundation Models adapters remain planned integrations.
