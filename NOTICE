@@ -1,0 +1,17 @@
+SwiftDecision Laya integration
+Copyright 2026 SwiftDecision contributors
+
+The optional native Laya backend includes implementation work derived from
+the Laya decision interface and prompt/output conventions:
+https://github.com/NandhaKishorM/laya
+Copyright Convai Innovations and Laya contributors. Licensed under Apache-2.0.
+
+Laya-MLX reference source:
+https://github.com/mizorewww/laya-mlx
+Upstream source revision: 6a5819129eb220570792e417e49723d697efd76f
+
+The Laya option rendering, token sequence construction, confidence calculation,
+and neural-network structure are independently implemented in Swift/MLX in
+accordance with the Apache-2.0 license. Model weights are provided separately
+by Convai Innovations and are not included in this repository. Consult the
+checkpoint model card for applicable weight terms.
