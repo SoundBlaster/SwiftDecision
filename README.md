@@ -85,4 +85,4 @@ swift build --traits MLX --triple arm64-apple-macosx14.0
 swift test --traits MLX --triple arm64-apple-macosx14.0
 ```
 
-CI checks Swift 6.4 on GitHub's Xcode 27 preview runner and Swift 6.3 as the minimum manifest/compiler version. The MLX lane also uses Apple Silicon and never downloads a checkpoint.
+CI checks Swift 6.4 on GitHub's Xcode 27 preview runner and Swift 6.3.3 as the minimum stable compiler for the Swift tools 6.3 manifest. The MLX lane also uses Apple Silicon and never downloads a checkpoint.
