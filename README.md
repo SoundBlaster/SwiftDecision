@@ -8,7 +8,7 @@
 
 SwiftDecision provides typed asynchronous Noul, Choice, and Score decisions over interchangeable model backends. It uses [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) internally for async request/output validation, ordered policy routing, and backend decision composition.
 
-The base package has no model downloads and keeps the package deployment floors at macOS 10.15, iOS 13, tvOS 13, and watchOS 6. The optional native MLX backend requires macOS 14 or iOS 17 and an Apple Silicon device. TypeSafe Jev and Apple Foundation Models adapters remain planned integrations.
+The base package has no model downloads and keeps the package deployment floors at macOS 10.15, iOS 13, tvOS 13, and watchOS 6. The optional native MLX backend requires macOS 14 or iOS 17 and an Apple Silicon device. TypeSafe Jev is available through its hosted API; an Apple Foundation Models adapter remains planned.
 
 ## Requirements
 
@@ -47,6 +47,33 @@ case let .fallback(value, reason): print("Fallback: \(value), reason: \(reason)"
 Choice labels stay typed in application code, and Score returns both the most likely rubric level and probability-weighted expected value. Low-confidence results abstain unless the caller supplies an explicit fallback. Backend errors are thrown and are not converted to abstentions.
 
 `DecisionEngine.Configuration` owns the per-kind probability/confidence policies and optional inference timeout. Caller cancellation is checked around the Core decision adapter; timeout cancels the backend task. The trace contains ordered stage names and model identifiers but never prompt text.
+
+## TypeSafe Jev backend
+
+`JevDecisionBackend` sends one typed Noul, Choice, or Score question to the [TypeSafe System One API](https://docs.typesafe.ai/). The decision context and instructions are sent to TypeSafe for inference. It reads `TYPESAFE_API_KEY` from the environment by default; an explicit `apiKey` initializer argument is also supported. The backend does not log credentials, follow redirects, retry requests, or include response bodies in errors. It uses the official HTTPS endpoint and requires network access. Choice supports up to 255 options; Score supports 2–10 ordered levels.
+
+```swift
+let backend = try JevDecisionBackend() // Reads TYPESAFE_API_KEY.
+let engine = DecisionEngine(backend: backend)
+
+let result = try await engine.choice(
+    instructions: "Choose the team that should handle this message.",
+    context: "My invoice contains a duplicate charge from yesterday.",
+    options: [
+        ChoiceOption(label: "support", description: "Account access or product use."),
+        ChoiceOption(label: "billing", description: "Invoices, refunds, or charges."),
+        ChoiceOption(label: "sales", description: "Plan selection or purchasing.")
+    ]
+)
+```
+
+The HTTP transport is injectable through `JevHTTPTransport`; the CI tests use fixture responses and make no network calls. To run the opt-in live smoke test for Noul, Choice, and Score, set `TYPESAFE_API_KEY` and explicitly enable it:
+
+```sh
+SWIFTDECISION_LIVE_JEV=1 swift test --disable-default-traits --filter JevDecisionBackendTests
+```
+
+This test sends three synthetic requests to TypeSafe and may incur API usage. It is skipped by default, including in CI.
 
 ## Native Laya backend (optional)
 
@@ -97,13 +124,13 @@ With a reference file, the suite requires exact selected option identifiers and 
 
 ## Benchmarks
 
-Laya is currently the only model-backed inference backend. The local parity suite measures output compatibility, not performance; SwiftDecision does not yet publish latency or throughput numbers. The mock backend is included for examples and CI contract tests, not as a model benchmark.
+Native Laya MLX and hosted TypeSafe Jev are the current model-backed inference backends. The local parity suite measures output compatibility, not performance; SwiftDecision does not yet publish latency or throughput numbers. The mock backend is included for examples and CI contract tests, not as a model benchmark.
 
 | Backend | Example workloads | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
 | Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Local Python parity passes in FP16 and FP32 | Not measured | Not measured |
 | `ClosureDecisionBackend` | Deterministic Noul, Choice, and Score fixtures | Request/response contract covered in CI | Not applicable | Not applicable |
-| TypeSafe Jev | Noul, Choice, and Score | Planned integration | — | — |
+| TypeSafe Jev | Noul, Choice, and Score | Mock HTTP contract tests; opt-in live smoke test | Not measured | Not measured |
 | Apple Foundation Models | Noul, Choice, and Score | Planned integration | — | — |
 
 ## Build and test
