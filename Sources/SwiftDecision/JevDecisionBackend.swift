@@ -74,6 +74,10 @@ public actor URLSessionJevHTTPTransport: JevHTTPTransport {
         )
     }
 
+    deinit {
+        session.invalidateAndCancel()
+    }
+
     public func send(_ request: JevHTTPRequest) async throws -> JevHTTPResponse {
         try Task.checkCancellation()
 
