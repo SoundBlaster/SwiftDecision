@@ -64,7 +64,7 @@ enum InboxRoute: Sendable, Hashable {
 struct InboxTriage {
     static func main() async throws {
         let backend = ClosureDecisionBackend { _ in
-            DecisionPrediction(probabilities: [0.05, 0.95], modelIdentifier: "fixture")
+            DecisionPrediction(probabilities: [0.05, 0.90, 0.05], modelIdentifier: "fixture")
         }
         let engine = DecisionEngine(
             backend: backend,
