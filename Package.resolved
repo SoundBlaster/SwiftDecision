@@ -1,5 +1,5 @@
 {
-  "originHash" : "a49c86bb6f77fe532fd0d6f0d4f60de1d70b9f5329b57c8a0f978048436abb58",
+  "originHash" : "25fa20938a6ab3d9eb3d920a56e8801cb8031c8c80ebe1b103ec85268c504d62",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SoundBlaster/SpecificationCore.git",
       "state" : {
-        "revision" : "f3ed68ce29db42de54a4ae905a304b61bdc50ce7",
-        "version" : "1.1.0"
+        "revision" : "2394671f82ce42bbaebcc11d1c1a05a53022fe2f",
+        "version" : "2.0.0"
       }
     },
     {
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "2bc86522d115234d1f588efe2bcb4ce4be8f8b82",
-        "version" : "510.0.3"
+        "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
+        "version" : "601.0.1"
       }
     },
     {
