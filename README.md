@@ -3,7 +3,7 @@
 [![CI](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SoundBlaster/SwiftDecision/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/release/SoundBlaster/SwiftDecision)](https://github.com/SoundBlaster/SwiftDecision/releases)
 [![Swift 6.3+](https://img.shields.io/badge/Swift-6.3%2B-orange?logo=swift)](https://www.swift.org)
-![Apple platforms](https://img.shields.io/badge/Apple%20platforms-macOS%2010.15%2B%20%7C%20iOS%2013%2B%20%7C%20tvOS%2013%2B%20%7C%20watchOS%206%2B-lightgrey?logo=apple)
+![Apple platforms](https://img.shields.io/badge/Apple%20platforms-macOS%2010.15%2B%20%7C%20iOS%2015%2B%20%7C%20tvOS%2013%2B%20%7C%20watchOS%206%2B-lightgrey?logo=apple)
 ![Optional MLX trait](https://img.shields.io/badge/MLX-optional%20trait-6e56cf?logo=apple)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -228,7 +228,7 @@ The current model-backed inference backend included in this package is native La
 ## Requirements and validation
 
 - Swift tools 6.3 or newer.
-- Base package deployment targets: macOS 10.15, iOS 13, tvOS 13, and watchOS 6.
+- Base package deployment targets: macOS 10.15, iOS 15, tvOS 13, and watchOS 6.
 - Native MLX backend: Apple Silicon, macOS 14+ or iOS 17+, and the `MLX` trait.
 
 Build and test without optional traits:
@@ -240,9 +240,9 @@ swift test --disable-default-traits
 
 CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights.
 
-## Scope of 0.2.0
+## Scope of 0.3.0
 
-SwiftDecision 0.2.0 provides typed Noul, Choice, and Score primitives, an opt-in native Laya MLX backend, and a backend protocol for integrations. Hosted providers are separate packages, including SwiftJev. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in this release.
+SwiftDecision 0.3.0 adds SpecificationCore-backed specification traces to typed Noul, Choice, and Score decisions. It supports iOS 13 and later; apps that need iOS 13 or 14 can stay on this release line. The following 0.4.0 release raises the minimum iOS deployment target to iOS 15. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in 0.3.0.
 
 ## License
 

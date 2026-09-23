@@ -35,6 +35,8 @@ jobs:
           [[ "$swift_version" == *"Swift version 6.4"* ]]
       - name: Build
         run: swift build --disable-default-traits
+      - name: Build iOS Simulator target (iOS 15+)
+        run: swift build --target SwiftDecision --triple arm64-apple-ios15.0-simulator --disable-default-traits
       - name: Run tests
         run: swift test --disable-default-traits
 
