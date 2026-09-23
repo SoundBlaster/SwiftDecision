@@ -111,6 +111,23 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         XCTAssertTrue(result.specificationTrace.contains { $0.outcome == .skipped })
     }
 
+    func testAcceptanceTraceShowsConfidenceRejectionAfterProbabilityPasses() async throws {
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.45, 0.55]),
+            configuration: .init(policies: .init(noul: .init(minimumProbability: 0.5, minimumConfidence: 0.5)))
+        )
+
+        let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+
+        XCTAssertNil(result.value)
+        XCTAssertTrue(result.specificationTrace.contains {
+            $0.name == "minimum probability" && $0.outcome == .satisfied
+        })
+        XCTAssertTrue(result.specificationTrace.contains {
+            $0.name == "minimum confidence" && $0.outcome == .unsatisfied
+        })
+    }
+
     func testSpecificationTraceHandlerMatchesSuccessfulResult() async throws {
         let recorder = SpecificationTraceEventRecorder()
         let engine = DecisionEngine(
