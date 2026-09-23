@@ -189,7 +189,21 @@ let backend = ClosureDecisionBackend { prompt in
 
 ## Traces and metrics
 
-Tracing is enabled by default and records ordered, content-free stages and model identifiers. Disable event collection when a call site does not need a trace:
+Tracing is enabled by default. `result.trace` records ordered, content-free decision stages and model identifiers. `result.specificationTrace` exposes the nested SpecificationCore events produced by request validation, ordered policy routing, backend decision evaluation, output validation, and acceptance policy checks:
+
+```swift
+let result = try await engine.choice(
+    instructions: "Choose a team.",
+    context: "The customer was charged twice.",
+    options: options
+)
+
+for event in result.specificationTrace {
+    print(event.name, event.outcome, event.durationNanoseconds)
+}
+```
+
+The SpecificationCore `Tracing` trait is enabled by SwiftDecision for its dependency. Both trace collections omit request and prediction contents. Disable event collection when a call site does not need either trace:
 
 ```swift
 let engine = DecisionEngine(
@@ -197,6 +211,8 @@ let engine = DecisionEngine(
     configuration: .init(traceMode: .disabled)
 )
 ```
+
+If a decision throws and there is no `DecisionResult` to inspect, provide `specificationTraceHandler` when creating the engine. SwiftDecision calls it once per decision with the Core events recorded before the error. The event list is empty when validation fails before any Core evaluation. Stable trace names identify `request validation`, `policy routing`, `backend prediction`, `output validation`, and `acceptance policy`; the last stage also shows which threshold failed. `traceMode: .disabled` suppresses both trace collections and this callback.
 
 An optional `DecisionMetricsHandler` receives one measurement per completed or failed decision. Metrics contain decision kind, monotonic elapsed time, and status; they omit prompts, model outputs, request identifiers, and error text. The callback may run concurrently, so keep it thread-safe and fast. SwiftDecision does not include an exporter or telemetry dependency; applications can forward measurements to their own systems.
 

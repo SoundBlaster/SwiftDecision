@@ -18,7 +18,11 @@ let package = Package(
         .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend.")
     ],
     dependencies: [
-        .package(url: "https://github.com/SoundBlaster/SpecificationCore.git", exact: "1.1.0"),
+        .package(
+            url: "https://github.com/SoundBlaster/SpecificationCore.git",
+            exact: "2.0.0",
+            traits: ["Tracing"]
+        ),
         .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.6"),
         .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.4")
     ],

@@ -138,12 +138,17 @@ public struct DecisionPolicies: Sendable, Hashable {
     fileprivate var isValid: Bool { noul.isValid && choice.isValid && score.isValid }
 }
 
-/// Controls whether an engine records per-decision trace events.
+private struct AcceptanceMetrics {
+    let probability: Double
+    let entropyConfidence: Double
+}
+
+/// Controls whether an engine records decision lifecycle and SpecificationCore trace events.
 public enum DecisionTraceMode: Sendable, Hashable {
-    /// Collect the ordered trace returned in each decision result.
+    /// Collect both ordered lifecycle and nested specification events.
     case enabled
 
-    /// Return an empty trace without creating timestamped events.
+    /// Return empty decision and specification traces without recording Core evaluations.
     case disabled
 }
 
@@ -215,6 +220,14 @@ public struct DecisionMetric: Sendable, Hashable {
 /// Its execution time is not included in ``DecisionMetric/durationSeconds``.
 public typealias DecisionMetricsHandler = @Sendable (DecisionMetric) -> Void
 
+/// A synchronous callback for collecting SpecificationCore events from one decision.
+///
+/// The callback receives the same events exposed by ``DecisionResult/specificationTrace`` on
+/// success. It also receives events when a decision throws; the array is empty if validation
+/// fails before a SpecificationCore evaluation. Concurrent decisions can invoke the callback
+/// concurrently, so implementations should be thread-safe and return promptly.
+public typealias SpecificationTraceHandler = @Sendable ([SpecificationTraceEvent]) -> Void
+
 /// The final state of a typed decision.
 public enum DecisionOutcome<Value: Sendable>: Sendable {
     /// The model result satisfied the selected policy.
@@ -227,7 +240,7 @@ public enum DecisionOutcome<Value: Sendable>: Sendable {
     case fallback(Value, reason: String)
 }
 
-/// A typed result together with its confidence, probability distribution, and trace.
+/// A typed result together with its confidence, probability distribution, and execution traces.
 public struct DecisionResult<Value: Sendable>: Sendable {
     /// Accepted, abstained, or fallback result.
     public let outcome: DecisionOutcome<Value>
@@ -240,6 +253,11 @@ public struct DecisionResult<Value: Sendable>: Sendable {
 
     /// Ordered, content-free execution events.
     public let trace: [DecisionTraceEvent]
+
+    /// SpecificationCore events for input validation, policy routing, backend evaluation, and output validation.
+    /// These events contain no request or result values. A `specificationTraceHandler` also receives
+    /// events produced before a decision throws.
+    public let specificationTrace: [SpecificationTraceEvent]
 
     /// Returns the accepted or fallback value, or `nil` after abstention.
     public var value: Value? {
@@ -401,7 +419,7 @@ public struct DecisionEngine: Sendable {
         /// Optional upper bound for one inference call.
         public let timeout: TimeInterval?
 
-        /// Whether successful results collect timestamped trace events.
+        /// Whether decisions collect lifecycle and SpecificationCore trace events.
         public let traceMode: DecisionTraceMode
 
         /// Creates runtime configuration.
@@ -409,7 +427,7 @@ public struct DecisionEngine: Sendable {
         /// - Parameters:
         ///   - policies: Per-kind thresholds used to accept or reject predictions.
         ///   - timeout: Optional upper bound for backend inference.
-        ///   - traceMode: Whether to collect trace events in successful results.
+        ///   - traceMode: Whether to collect lifecycle and SpecificationCore events.
         public init(
             policies: DecisionPolicies = DecisionPolicies(),
             timeout: TimeInterval? = nil,
@@ -424,6 +442,7 @@ public struct DecisionEngine: Sendable {
     private let backend: any DecisionBackend
     private let configuration: Configuration
     private let metricsHandler: DecisionMetricsHandler?
+    private let specificationTraceHandler: SpecificationTraceHandler?
 
     /// Creates an engine around any asynchronous decision backend.
     ///
@@ -431,14 +450,17 @@ public struct DecisionEngine: Sendable {
     ///   - backend: Provider used to produce decision predictions.
     ///   - configuration: Runtime policies, timeout, and trace collection mode.
     ///   - metricsHandler: Optional callback for content-free measurements of completed or failed calls.
+    ///   - specificationTraceHandler: Optional callback for SpecificationCore events, including failed calls.
     public init(
         backend: some DecisionBackend,
         configuration: Configuration = Configuration(),
-        metricsHandler: DecisionMetricsHandler? = nil
+        metricsHandler: DecisionMetricsHandler? = nil,
+        specificationTraceHandler: SpecificationTraceHandler? = nil
     ) {
         self.backend = backend
         self.configuration = configuration
         self.metricsHandler = metricsHandler
+        self.specificationTraceHandler = specificationTraceHandler
     }
 
     /// Evaluates a boolean statement using the fixed option order `[false, true]`.
@@ -448,7 +470,7 @@ public struct DecisionEngine: Sendable {
         context: String,
         fallback: Bool? = nil
     ) async throws -> DecisionResult<Bool> {
-        try await withMetrics(for: .noul) {
+        try await withObservability(for: .noul) { specificationRecorder in
             let prompt = DecisionPrompt(
                 id: id,
                 kind: .noul,
@@ -459,7 +481,11 @@ public struct DecisionEngine: Sendable {
                     DecisionOption(id: "true", description: "true: yes, the statement holds")
                 ]
             )
-            let value = try await evaluate(prompt, fallbackIndex: fallback.map { $0 ? 1 : 0 })
+            let value = try await evaluate(
+                prompt,
+                fallbackIndex: fallback.map { $0 ? 1 : 0 },
+                specificationRecorder: specificationRecorder
+            )
             return map(value) { $0 == 1 }
         }
     }
@@ -472,7 +498,7 @@ public struct DecisionEngine: Sendable {
         options: [ChoiceOption<Label>],
         fallback: Label? = nil
     ) async throws -> DecisionResult<Label> {
-        try await withMetrics(for: .choice) {
+        try await withObservability(for: .choice) { specificationRecorder in
             guard Set(options.map(\.label)).count == options.count else {
                 throw DecisionError.invalidRequest("choice labels must be unique")
             }
@@ -494,7 +520,11 @@ public struct DecisionEngine: Sendable {
             } else {
                 fallbackIndex = nil
             }
-            let selected = try await evaluate(prompt, fallbackIndex: fallbackIndex)
+            let selected = try await evaluate(
+                prompt,
+                fallbackIndex: fallbackIndex,
+                specificationRecorder: specificationRecorder
+            )
             return map(selected) { options[$0].label }
         }
     }
@@ -507,7 +537,7 @@ public struct DecisionEngine: Sendable {
         levels: [(description: String, value: Double)],
         fallback: ScoreValue? = nil
     ) async throws -> DecisionResult<ScoreValue> {
-        try await withMetrics(for: .score) {
+        try await withObservability(for: .score) { specificationRecorder in
             guard levels.count >= 2, levels.allSatisfy({ $0.value.isFinite }) else {
                 throw DecisionError.invalidRequest("score requires at least two levels with finite numeric values")
             }
@@ -523,7 +553,11 @@ public struct DecisionEngine: Sendable {
                     DecisionOption(id: String($0.offset), description: "level \($0.offset): \($0.element.description)")
                 }
             )
-            let evaluated = try await evaluate(prompt, fallbackIndex: fallback.map(\.level))
+            let evaluated = try await evaluate(
+                prompt,
+                fallbackIndex: fallback.map(\.level),
+                specificationRecorder: specificationRecorder
+            )
             let mappedOutcome = mapOutcome(evaluated.outcome) { index in
                 ScoreValue(
                     level: index,
@@ -541,30 +575,45 @@ public struct DecisionEngine: Sendable {
                 outcome: outcome,
                 confidence: evaluated.confidence,
                 probabilities: evaluated.probabilities,
-                trace: evaluated.trace
+                trace: evaluated.trace,
+                specificationTrace: evaluated.specificationTrace
             )
         }
     }
 
-    private func withMetrics<Value: Sendable>(
+    private func withObservability<Value: Sendable>(
         for kind: DecisionKind,
-        operation: () async throws -> DecisionResult<Value>
+        operation: (SpecificationTraceRecorder?) async throws -> DecisionResult<Value>
     ) async throws -> DecisionResult<Value> {
-        guard let metricsHandler else { return try await operation() }
-
         let startedAt = ProcessInfo.processInfo.systemUptime
+        let specificationRecorder = configuration.traceMode == .enabled ? SpecificationTraceRecorder() : nil
         do {
-            let result = try await operation()
-            metricsHandler(DecisionMetric(
+            let result: DecisionResult<Value>
+            if let specificationRecorder {
+                result = try await operation(specificationRecorder)
+            } else {
+                result = try await SpecificationTraceRuntime.withoutRecording {
+                    try await operation(nil)
+                }
+            }
+            let durationSeconds = max(ProcessInfo.processInfo.systemUptime - startedAt, 0)
+            if let specificationRecorder {
+                specificationTraceHandler?(specificationRecorder.events)
+            }
+            metricsHandler?(DecisionMetric(
                 kind: kind,
-                durationSeconds: max(ProcessInfo.processInfo.systemUptime - startedAt, 0),
+                durationSeconds: durationSeconds,
                 status: metricStatus(for: result.outcome)
             ))
             return result
         } catch {
-            metricsHandler(DecisionMetric(
+            let durationSeconds = max(ProcessInfo.processInfo.systemUptime - startedAt, 0)
+            if let specificationRecorder {
+                specificationTraceHandler?(specificationRecorder.events)
+            }
+            metricsHandler?(DecisionMetric(
                 kind: kind,
-                durationSeconds: max(ProcessInfo.processInfo.systemUptime - startedAt, 0),
+                durationSeconds: durationSeconds,
                 status: .failed
             ))
             throw error
@@ -581,7 +630,8 @@ public struct DecisionEngine: Sendable {
 
     private func evaluate(
         _ prompt: DecisionPrompt,
-        fallbackIndex: Int?
+        fallbackIndex: Int?,
+        specificationRecorder: SpecificationTraceRecorder?
     ) async throws -> DecisionResult<Int> {
         try Task.checkCancellation()
         guard configuration.policies.isValid else {
@@ -597,8 +647,18 @@ public struct DecisionEngine: Sendable {
                 && candidate.options.count >= 2
                 && candidate.options.allSatisfy { !$0.description.isEmpty }
                 && Set(candidate.options.map(\.id)).count == candidate.options.count
+        }.tracedAsync("request validation")
+        let isRequestValid: Bool
+        if let specificationRecorder {
+            isRequestValid = try await SpecificationTraceRuntime.evaluateAsync(
+                requestIsValid,
+                prompt,
+                recordingTo: specificationRecorder
+            )
+        } else {
+            isRequestValid = try await requestIsValid.isSatisfiedBy(prompt)
         }
-        guard try await requestIsValid.isSatisfiedBy(prompt) else {
+        guard isRequestValid else {
             throw DecisionError.invalidRequest("id, instructions, context, and at least two unique options are required")
         }
 
@@ -609,7 +669,18 @@ public struct DecisionEngine: Sendable {
             .addPredicate({ $0 == .choice }, result: configuration.policies.choice)
             .addPredicate({ $0 == .score }, result: configuration.policies.score)
             .build()
-        guard let policy = try await policyRouter.decide(prompt.kind) else {
+            .tracedAsync("policy routing")
+        let selectedPolicy: DecisionPolicy?
+        if let specificationRecorder {
+            selectedPolicy = try await SpecificationTraceRuntime.decideAsync(
+                policyRouter,
+                prompt.kind,
+                recordingTo: specificationRecorder
+            )
+        } else {
+            selectedPolicy = try await policyRouter.decide(prompt.kind)
+        }
+        guard let policy = selectedPolicy else {
             throw DecisionError.noPolicySelected
         }
         trace.record(.policySelected, detail: prompt.kind.rawValue)
@@ -621,9 +692,19 @@ public struct DecisionEngine: Sendable {
                 }
             }
             return try await backend.predict(for: request)
-        }
+        }.tracedAsync("backend prediction")
         trace.record(.inferenceStarted, detail: "\(prompt.options.count) options")
-        guard let prediction = try await backendDecision.decide(prompt) else {
+        let predictionResult: DecisionPrediction?
+        if let specificationRecorder {
+            predictionResult = try await SpecificationTraceRuntime.decideAsync(
+                backendDecision,
+                prompt,
+                recordingTo: specificationRecorder
+            )
+        } else {
+            predictionResult = try await backendDecision.decide(prompt)
+        }
+        guard let prediction = predictionResult else {
             throw DecisionError.invalidPrediction("backend returned no result")
         }
         trace.record(.inferenceCompleted, detail: prediction.modelIdentifier)
@@ -632,8 +713,18 @@ public struct DecisionEngine: Sendable {
             output.probabilities.count == prompt.options.count
                 && output.probabilities.allSatisfy { $0.isFinite && $0 >= 0 }
                 && abs(output.probabilities.reduce(0, +) - 1) <= 0.01
+        }.tracedAsync("output validation")
+        let isPredictionValid: Bool
+        if let specificationRecorder {
+            isPredictionValid = try await SpecificationTraceRuntime.evaluateAsync(
+                predictionIsValid,
+                prediction,
+                recordingTo: specificationRecorder
+            )
+        } else {
+            isPredictionValid = try await predictionIsValid.isSatisfiedBy(prediction)
         }
-        guard try await predictionIsValid.isSatisfiedBy(prediction) else {
+        guard isPredictionValid else {
             throw DecisionError.invalidPrediction("expected \(prompt.options.count) finite, nonnegative probabilities summing to 1")
         }
         trace.record(.outputValidated)
@@ -643,9 +734,29 @@ public struct DecisionEngine: Sendable {
         } ?? 0
         let confidence = prediction.probabilities[selectedIndex]
         let entropyConfidence = normalizedConfidence(prediction.probabilities)
+        let acceptanceMetrics = AcceptanceMetrics(probability: confidence, entropyConfidence: entropyConfidence)
+        let meetsMinimumProbability = AnyAsyncSpecification<AcceptanceMetrics> {
+            $0.probability >= policy.minimumProbability
+        }.tracedAsync("minimum probability")
+        let meetsMinimumConfidence = AnyAsyncSpecification<AcceptanceMetrics> {
+            $0.entropyConfidence >= policy.minimumConfidence
+        }.tracedAsync("minimum confidence")
+        let acceptancePolicy = meetsMinimumProbability
+            .andAsync(meetsMinimumConfidence)
+            .tracedAsync("acceptance policy")
+        let isAccepted: Bool
+        if let specificationRecorder {
+            isAccepted = try await SpecificationTraceRuntime.evaluateAsync(
+                acceptancePolicy,
+                acceptanceMetrics,
+                recordingTo: specificationRecorder
+            )
+        } else {
+            isAccepted = try await acceptancePolicy.isSatisfiedBy(acceptanceMetrics)
+        }
         let reason = "confidence \(confidence) did not satisfy the selected policy"
         let outcome: DecisionOutcome<Int>
-        if confidence >= policy.minimumProbability && entropyConfidence >= policy.minimumConfidence {
+        if isAccepted {
             outcome = .accepted(selectedIndex)
         } else if let fallbackIndex {
             guard prediction.probabilities.indices.contains(fallbackIndex) else {
@@ -660,7 +771,8 @@ public struct DecisionEngine: Sendable {
             outcome: outcome,
             confidence: confidence,
             probabilities: prediction.probabilities,
-            trace: trace.events
+            trace: trace.events,
+            specificationTrace: specificationRecorder?.events ?? []
         )
     }
 
@@ -672,7 +784,8 @@ public struct DecisionEngine: Sendable {
             outcome: mapOutcome(result.outcome, transform: transform),
             confidence: result.confidence,
             probabilities: result.probabilities,
-            trace: result.trace
+            trace: result.trace,
+            specificationTrace: result.specificationTrace
         )
     }
 
