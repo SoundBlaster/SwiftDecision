@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+### Changed
+
+- Raise the minimum iOS deployment target from iOS 13 to iOS 15. Apps that still support iOS 13 or 14 should remain on SwiftDecision 0.3.x using `.upToNextMinor(from: "0.3.0")` so SwiftPM cannot select 0.4.0.
+
+### Added
+
+- Add an iOS 15 Simulator build to the Swift 6.4 CI job.
+
 ## 0.3.0
 
 ### Added
