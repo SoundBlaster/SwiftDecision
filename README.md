@@ -33,7 +33,18 @@ In your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.2.0")
+    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.3.0")
+],
+```
+
+If your app still supports iOS 13 or 14, constrain resolution to the compatible 0.3 series. The up-to-next-minor requirement excludes 0.4.0 and later:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/SoundBlaster/SwiftDecision.git",
+        .upToNextMinor(from: "0.3.0")
+    )
 ],
 ```
 
@@ -143,7 +154,7 @@ Enable the trait in the consuming package:
 ```swift
 .package(
     url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    from: "0.2.0",
+    from: "0.3.0",
     traits: ["MLX"]
 )
 ```
