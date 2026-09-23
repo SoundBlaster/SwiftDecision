@@ -4,7 +4,7 @@
 
 **Date:** 2026-09-24
 
-**Depends on:** the proposed shared trace-position API in SpecificationCore
+**Depends on:** [SpecificationCore proposal, PR #11](https://github.com/SoundBlaster/SpecificationCore/pull/11)
 
 ## Summary
 
