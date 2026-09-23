@@ -45,6 +45,13 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         XCTAssertTrue(result.specificationTrace.contains { $0.outcome == .satisfied })
         XCTAssertTrue(result.specificationTrace.contains { $0.outcome == .skipped })
         XCTAssertTrue(result.specificationTrace.contains { $0.parentID != nil })
+        XCTAssertTrue(result.specificationTrace.contains { $0.name == "request validation" })
+        XCTAssertTrue(result.specificationTrace.contains { $0.name == "policy routing" })
+        XCTAssertTrue(result.specificationTrace.contains { $0.name == "backend prediction" })
+        XCTAssertTrue(result.specificationTrace.contains { $0.name == "output validation" })
+        XCTAssertTrue(result.specificationTrace.contains {
+            $0.name == "acceptance policy" && $0.outcome == .satisfied
+        })
     }
 
     func testChoiceAndScoreResultsIncludeSpecificationCoreTrace() async throws {
@@ -70,15 +77,53 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
     }
 
     func testDisabledDecisionTraceSuppressesSpecificationCoreTrace() async throws {
+        let recorder = SpecificationTraceEventRecorder()
         let engine = DecisionEngine(
             backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
-            configuration: .init(traceMode: .disabled)
+            configuration: .init(traceMode: .disabled),
+            specificationTraceHandler: { recorder.append($0) }
         )
 
         let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
 
         XCTAssertTrue(result.trace.isEmpty)
         XCTAssertTrue(result.specificationTrace.isEmpty)
+        XCTAssertTrue(recorder.batches().isEmpty)
+    }
+
+    func testAcceptanceTraceShowsRejectedThresholdAndFallback() async throws {
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.49, 0.51]),
+            configuration: .init(policies: .init(noul: .init(minimumProbability: 0.8, minimumConfidence: 0)))
+        )
+
+        let result = try await engine.noul(
+            statement: "Is it urgent?", context: "A fixture request.", fallback: false
+        )
+
+        XCTAssertEqual(result.value, false)
+        XCTAssertTrue(result.specificationTrace.contains {
+            $0.name == "acceptance policy" && $0.outcome == .unsatisfied
+        })
+        XCTAssertTrue(result.specificationTrace.contains {
+            $0.name == "minimum probability" && $0.outcome == .unsatisfied
+        })
+        XCTAssertTrue(result.specificationTrace.contains { $0.outcome == .skipped })
+    }
+
+    func testSpecificationTraceHandlerMatchesSuccessfulResult() async throws {
+        let recorder = SpecificationTraceEventRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            specificationTraceHandler: { recorder.append($0) }
+        )
+
+        let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+
+        let batches = recorder.batches()
+        XCTAssertEqual(batches.count, 1)
+        XCTAssertEqual(batches.first?.map(\.id), result.specificationTrace.map(\.id))
+        XCTAssertEqual(batches.first?.map(\.name), result.specificationTrace.map(\.name))
     }
 
     func testSpecificationTraceHandlerReceivesEventsWhenBackendFails() async {
@@ -104,6 +149,53 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
             return false
         })
     }
+
+    func testSpecificationTraceHandlerCoversEarlyValidationFailures() async {
+        let recorder = SpecificationTraceEventRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            specificationTraceHandler: { recorder.append($0) }
+        )
+        let options = [
+            ChoiceOption(label: "support", description: "Support."),
+            ChoiceOption(label: "billing", description: "Billing.")
+        ]
+
+        for operation in 0 ..< 4 {
+            do {
+                switch operation {
+                case 0:
+                    _ = try await engine.choice(
+                        instructions: "Choose a team.", context: "A request.",
+                        options: [options[0], options[0]]
+                    )
+                case 1:
+                    _ = try await engine.choice(
+                        instructions: "Choose a team.", context: "A request.",
+                        options: options, fallback: "other"
+                    )
+                case 2:
+                    _ = try await engine.score(
+                        instructions: "Score.", context: "A request.", levels: [("only", 1)]
+                    )
+                default:
+                    _ = try await engine.score(
+                        instructions: "Score.", context: "A request.",
+                        levels: [("low", 0), ("high", 1)],
+                        fallback: ScoreValue(level: 2, expectedValue: 0)
+                    )
+                }
+                XCTFail("Expected invalid request")
+            } catch is DecisionError {
+                // Expected.
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        XCTAssertEqual(recorder.batches().count, 4)
+        XCTAssertTrue(recorder.batches().allSatisfy(\.isEmpty))
+    }
 }
 
 private enum FixtureBackendError: Error {
@@ -113,17 +205,25 @@ private enum FixtureBackendError: Error {
 private final class SpecificationTraceEventRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var events: [SpecificationTraceEvent] = []
+    private var recordedBatches: [[SpecificationTraceEvent]] = []
 
     func append(_ newEvents: [SpecificationTraceEvent]) {
         lock.lock()
         defer { lock.unlock() }
         events.append(contentsOf: newEvents)
+        recordedBatches.append(newEvents)
     }
 
     func snapshot() -> [SpecificationTraceEvent] {
         lock.lock()
         defer { lock.unlock() }
         return events
+    }
+
+    func batches() -> [[SpecificationTraceEvent]] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recordedBatches
     }
 }
 

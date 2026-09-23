@@ -189,7 +189,7 @@ let backend = ClosureDecisionBackend { prompt in
 
 ## Traces and metrics
 
-Tracing is enabled by default. `result.trace` records ordered, content-free decision stages and model identifiers. `result.specificationTrace` exposes the nested SpecificationCore events produced by request validation, ordered policy routing, backend decision evaluation, and output validation:
+Tracing is enabled by default. `result.trace` records ordered, content-free decision stages and model identifiers. `result.specificationTrace` exposes the nested SpecificationCore events produced by request validation, ordered policy routing, backend decision evaluation, output validation, and acceptance policy checks:
 
 ```swift
 let result = try await engine.choice(
@@ -212,7 +212,7 @@ let engine = DecisionEngine(
 )
 ```
 
-If a decision throws and there is no `DecisionResult` to inspect, provide `specificationTraceHandler` when creating the engine. SwiftDecision calls it with the Core events recorded before the error. `traceMode: .disabled` suppresses both trace collections and this callback.
+If a decision throws and there is no `DecisionResult` to inspect, provide `specificationTraceHandler` when creating the engine. SwiftDecision calls it once per decision with the Core events recorded before the error. The event list is empty when validation fails before any Core evaluation. Stable trace names identify `request validation`, `policy routing`, `backend prediction`, `output validation`, and `acceptance policy`; the last stage also shows which threshold failed. `traceMode: .disabled` suppresses both trace collections and this callback.
 
 An optional `DecisionMetricsHandler` receives one measurement per completed or failed decision. Metrics contain decision kind, monotonic elapsed time, and status; they omit prompts, model outputs, request identifiers, and error text. The callback may run concurrently, so keep it thread-safe and fast. SwiftDecision does not include an exporter or telemetry dependency; applications can forward measurements to their own systems.
 
