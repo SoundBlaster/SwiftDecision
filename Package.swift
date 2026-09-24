@@ -8,23 +8,23 @@ let package = Package(
         .iOS(.v15),
         .macOS(.v10_15),
         .tvOS(.v13),
-        .watchOS(.v6)
+        .watchOS(.v6),
     ],
     products: [
         .library(name: "SwiftDecision", targets: ["SwiftDecision"]),
         .executable(name: "InboxTriageExample", targets: ["InboxTriageExample"]),
     ],
     traits: [
-        .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend.")
+        .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend."),
     ],
     dependencies: [
         .package(
             url: "https://github.com/SoundBlaster/SpecificationCore.git",
-            exact: "2.0.0",
+            revision: "83cfea8ecc47513e6331b4ecd93189c5e6715636",
             traits: ["Tracing"]
         ),
         .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.6"),
-        .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.4")
+        .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.4"),
     ],
     targets: [
         .target(
@@ -33,10 +33,10 @@ let package = Package(
                 .product(name: "SpecificationCore", package: "SpecificationCore"),
                 .product(name: "MLX", package: "mlx-swift", condition: .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
                 .product(name: "MLXNN", package: "mlx-swift", condition: .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
-                .product(name: "Tokenizers", package: "swift-transformers", condition: .when(platforms: [.iOS, .macOS], traits: ["MLX"]))
+                .product(name: "Tokenizers", package: "swift-transformers", condition: .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
             ],
             swiftSettings: [
-                .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"]))
+                .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
             ]
         ),
         .executableTarget(
@@ -48,11 +48,11 @@ let package = Package(
             name: "SwiftDecisionTests",
             dependencies: [
                 "SwiftDecision",
-                .product(name: "SpecificationCore", package: "SpecificationCore")
+                .product(name: "SpecificationCore", package: "SpecificationCore"),
             ],
             swiftSettings: [
-                .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"]))
+                .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
             ]
-        )
+        ),
     ]
 )

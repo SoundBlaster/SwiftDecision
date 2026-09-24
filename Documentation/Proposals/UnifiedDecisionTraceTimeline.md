@@ -1,6 +1,6 @@
 # Proposal: Unified decision trace timeline
 
-**Status:** Draft; dependent design confirmed against SpecificationCore API decisions
+**Status:** Implementation in SwiftDecision PR #12
 
 **Date:** 2026-09-24
 
@@ -102,3 +102,7 @@ The Oracle history screen in SwiftDecision-Examples is a useful integration test
 1. Name the result property `orderedTrace` and give it the `DecisionTraceSnapshot` type. The name distinguishes the merged view from the existing `trace` array.
 2. Add `decisionTraceHandler` in the same change as `orderedTrace`, so the merged API works on both returned and thrown calls.
 3. Keep outcome in the returned `DecisionResult` or thrown error. The snapshot contains content-free event records and does not duplicate outcome state.
+
+## Implementation note
+
+The implementation exposes `DecisionResult.orderedTrace`, `DecisionTraceSnapshot.records`, and the optional `DecisionEngine.decisionTraceHandler`. SwiftDecision currently resolves SpecificationCore to the merge commit for PR #11 because the published 2.0.0 tag predates `SpecificationTraceTimeline`. Replace this revision pin with the next SpecificationCore release that contains the API.

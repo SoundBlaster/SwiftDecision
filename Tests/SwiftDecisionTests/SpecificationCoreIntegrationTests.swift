@@ -4,6 +4,24 @@ import SwiftDecision
 import XCTest
 
 final class SpecificationCoreIntegrationTests: XCTestCase {
+    private actor BackendStartSignal {
+        private var started = false
+        private var continuation: CheckedContinuation<Void, Never>?
+
+        func markStarted() {
+            started = true
+            continuation?.resume()
+            continuation = nil
+        }
+
+        func waitUntilStarted() async {
+            guard !started else { return }
+            await withCheckedContinuation { continuation in
+                self.continuation = continuation
+            }
+        }
+    }
+
     func testPackageCanEvaluateCoreAsyncSpecification() async throws {
         let specification = AnyAsyncSpecification<Int> { $0 > 0 }
         let isSatisfied = try await specification.isSatisfiedBy(1)
@@ -54,6 +72,53 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         })
     }
 
+    func testOrderedTraceMergesLifecycleAndSpecificationEventsByTimelinePosition() async throws {
+        let engine = DecisionEngine(backend: FixedDecisionBackend(probabilities: [0.1, 0.9]))
+
+        let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+
+        let records = result.orderedTrace.records
+        let sequences = records.compactMap { $0.position?.sequence }
+        XCTAssertFalse(records.isEmpty)
+        XCTAssertEqual(sequences, sequences.sorted())
+        XCTAssertEqual(Set(sequences).count, sequences.count)
+
+        let lifecycleStages = records.compactMap { record -> DecisionTraceEvent.Stage? in
+            guard case let .lifecycle(event) = record else { return nil }
+            return event.stage
+        }
+        XCTAssertEqual(lifecycleStages, [.requestValidated, .policySelected, .inferenceStarted,
+                                         .inferenceCompleted, .outputValidated, .resolved])
+
+        let specificationEvents = records.compactMap { record -> SpecificationTraceEvent? in
+            guard case let .specification(event) = record else { return nil }
+            return event
+        }
+        XCTAssertEqual(specificationEvents.count, result.specificationTrace.count)
+        for event in specificationEvents {
+            let start = try XCTUnwrap(event.startPosition)
+            let completion = try XCTUnwrap(event.completionPosition)
+            XCTAssertLessThanOrEqual(start.sequence, completion.sequence)
+        }
+    }
+
+    func testDecisionTraceHandlerMatchesSuccessfulResultTimeline() async throws {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertEqual(
+            snapshots[0].records.compactMap { $0.position?.sequence },
+            result.orderedTrace.records.compactMap { $0.position?.sequence }
+        )
+    }
+
     func testChoiceAndScoreResultsIncludeSpecificationCoreTrace() async throws {
         let engine = DecisionEngine(backend: FixedDecisionBackend(probabilities: [0.1, 0.9]))
         let choice = try await engine.choice(
@@ -61,7 +126,7 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
             context: "A fixture request.",
             options: [
                 ChoiceOption(label: "support", description: "Product support."),
-                ChoiceOption(label: "billing", description: "Billing questions.")
+                ChoiceOption(label: "billing", description: "Billing questions."),
             ]
         )
         let score = try await engine.score(
@@ -78,10 +143,12 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
 
     func testDisabledDecisionTraceSuppressesSpecificationCoreTrace() async throws {
         let recorder = SpecificationTraceEventRecorder()
+        let decisionTraceRecorder = DecisionTraceSnapshotRecorder()
         let engine = DecisionEngine(
             backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
             configuration: .init(traceMode: .disabled),
-            specificationTraceHandler: { recorder.append($0) }
+            specificationTraceHandler: { recorder.append($0) },
+            decisionTraceHandler: { decisionTraceRecorder.append($0) }
         )
 
         let result = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
@@ -89,6 +156,8 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         XCTAssertTrue(result.trace.isEmpty)
         XCTAssertTrue(result.specificationTrace.isEmpty)
         XCTAssertTrue(recorder.batches().isEmpty)
+        XCTAssertTrue(result.orderedTrace.records.isEmpty)
+        XCTAssertTrue(decisionTraceRecorder.snapshots().isEmpty)
     }
 
     func testAcceptanceTraceShowsRejectedThresholdAndFallback() async throws {
@@ -167,6 +236,199 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         })
     }
 
+    func testDecisionTraceHandlerReceivesTimelineWhenBackendFails() async {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: ClosureDecisionBackend { _ in throw FixtureBackendError.failed },
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        do {
+            _ = try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+            XCTFail("Expected backend error")
+        } catch is FixtureBackendError {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertTrue(snapshots[0].records.contains { record in
+            guard case let .lifecycle(event) = record else { return false }
+            return event.stage == .inferenceStarted
+        })
+        XCTAssertTrue(snapshots[0].records.contains { record in
+            guard case let .specification(event) = record else { return false }
+            if case .failed = event.outcome {
+                return event.name == "backend prediction"
+            }
+            return false
+        })
+    }
+
+    func testDecisionTraceHandlerReceivesEmptySnapshotForEarlyFailure() async {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        do {
+            _ = try await engine.choice(
+                instructions: "Choose a team.",
+                context: "A fixture request.",
+                options: [
+                    ChoiceOption(label: "same", description: "First."),
+                    ChoiceOption(label: "same", description: "Second."),
+                ]
+            )
+            XCTFail("Expected invalid request")
+        } catch is DecisionError {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertTrue(snapshots[0].records.isEmpty)
+    }
+
+    func testDecisionTraceHandlerRunsForAbstentionAndFallback() async throws {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.51, 0.49]),
+            configuration: .init(
+                policies: .init(noul: .init(minimumProbability: 0.8, minimumConfidence: 0))
+            ),
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        let abstained = try await engine.noul(statement: "Is it urgent?", context: "Unclear.")
+        let fallback = try await engine.noul(
+            statement: "Is it urgent?",
+            context: "Unclear.",
+            fallback: false
+        )
+
+        XCTAssertNil(abstained.value)
+        XCTAssertEqual(fallback.value, false)
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 2)
+        let resolvedDetails = snapshots.map { snapshot in
+            snapshot.records.compactMap { record -> String? in
+                guard case let .lifecycle(event) = record, event.stage == .resolved else { return nil }
+                return event.detail
+            }.first
+        }
+        XCTAssertEqual(resolvedDetails, ["abstained", "fallback"])
+    }
+
+    func testDecisionTraceHandlerKeepsRequestValidationFailureDetails() async {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        do {
+            _ = try await engine.noul(statement: "   ", context: "A fixture request.")
+            XCTFail("Expected invalid request")
+        } catch is DecisionError {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertTrue(snapshots[0].records.contains { record in
+            guard case let .specification(event) = record else { return false }
+            return event.name == "request validation" && event.outcome == .unsatisfied
+        })
+        XCTAssertFalse(snapshots[0].records.contains { record in
+            guard case let .lifecycle(event) = record else { return false }
+            return event.stage == .requestValidated
+        })
+    }
+
+    func testDecisionTraceHandlerReceivesPartialSnapshotWhenCancelled() async {
+        let started = BackendStartSignal()
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: ClosureDecisionBackend { _ in
+                await started.markStarted()
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                return DecisionPrediction(probabilities: [0.1, 0.9], modelIdentifier: "fixture")
+            },
+            decisionTraceHandler: { recorder.append($0) }
+        )
+        let task = Task {
+            try await engine.noul(statement: "Is it urgent?", context: "A fixture request.")
+        }
+
+        await started.waitUntilStarted()
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            XCTFail("Expected cancellation")
+        } catch is CancellationError {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertTrue(snapshots[0].records.contains { record in
+            guard case let .lifecycle(event) = record else { return false }
+            return event.stage == .inferenceStarted
+        })
+    }
+
+    func testConcurrentDecisionsHaveIndependentOrderedTimelines() async throws {
+        let recorder = DecisionTraceSnapshotRecorder()
+        let engine = DecisionEngine(
+            backend: FixedDecisionBackend(probabilities: [0.1, 0.9]),
+            decisionTraceHandler: { recorder.append($0) }
+        )
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for index in 0 ..< 12 {
+                group.addTask {
+                    _ = try await engine.noul(
+                        id: "request-\(index)",
+                        statement: "Is it urgent?",
+                        context: "A fixture request."
+                    )
+                }
+            }
+            try await group.waitForAll()
+        }
+
+        let snapshots = recorder.snapshots()
+        XCTAssertEqual(snapshots.count, 12)
+        for snapshot in snapshots {
+            let positions = snapshot.records.compactMap { $0.position?.sequence }
+            XCTAssertFalse(positions.isEmpty)
+            XCTAssertEqual(positions, positions.sorted())
+            XCTAssertEqual(Set(positions).count, positions.count)
+            XCTAssertEqual(positions.first, 1)
+
+            let specificationEvents = snapshot.records.compactMap { record -> SpecificationTraceEvent? in
+                guard case let .specification(event) = record else { return nil }
+                return event
+            }
+            let ids = Set(specificationEvents.map(\.id))
+            XCTAssertTrue(specificationEvents.allSatisfy { event in
+                guard let parentID = event.parentID else { return true }
+                return ids.contains(parentID)
+            })
+        }
+    }
+
     func testSpecificationTraceHandlerCoversEarlyValidationFailures() async {
         let recorder = SpecificationTraceEventRecorder()
         let engine = DecisionEngine(
@@ -175,7 +437,7 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         )
         let options = [
             ChoiceOption(label: "support", description: "Support."),
-            ChoiceOption(label: "billing", description: "Billing.")
+            ChoiceOption(label: "billing", description: "Billing."),
         ]
 
         for operation in 0 ..< 4 {
@@ -244,10 +506,27 @@ private final class SpecificationTraceEventRecorder: @unchecked Sendable {
     }
 }
 
+private final class DecisionTraceSnapshotRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedSnapshots: [DecisionTraceSnapshot] = []
+
+    func append(_ snapshot: DecisionTraceSnapshot) {
+        lock.lock()
+        defer { lock.unlock() }
+        storedSnapshots.append(snapshot)
+    }
+
+    func snapshots() -> [DecisionTraceSnapshot] {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedSnapshots
+    }
+}
+
 private struct FixedDecisionBackend: DecisionBackend {
     let probabilities: [Double]
 
-    func predict(for prompt: DecisionPrompt) async throws -> DecisionPrediction {
+    func predict(for _: DecisionPrompt) async throws -> DecisionPrediction {
         DecisionPrediction(probabilities: probabilities, modelIdentifier: "fixture")
     }
 }

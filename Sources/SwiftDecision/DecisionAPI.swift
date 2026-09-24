@@ -135,7 +135,9 @@ public struct DecisionPolicies: Sendable, Hashable {
         self.score = score
     }
 
-    fileprivate var isValid: Bool { noul.isValid && choice.isValid && score.isValid }
+    fileprivate var isValid: Bool {
+        noul.isValid && choice.isValid && score.isValid
+    }
 }
 
 private struct AcceptanceMetrics {
@@ -170,13 +172,49 @@ public struct DecisionTraceEvent: Sendable, Hashable {
     /// Time at which the stage completed.
     public let timestamp: Date
 
+    /// Monotonic position assigned within this decision invocation.
+    public let position: SpecificationTracePosition
+
     /// Optional stage detail that does not contain request contents.
     public let detail: String?
 
-    fileprivate init(_ stage: Stage, detail: String? = nil, timestamp: Date = Date()) {
+    fileprivate init(
+        _ stage: Stage,
+        detail: String? = nil,
+        timestamp: Date = Date(),
+        position: SpecificationTracePosition
+    ) {
         self.stage = stage
         self.timestamp = timestamp
         self.detail = detail
+        self.position = position
+    }
+}
+
+/// One event source in a merged decision timeline.
+public enum DecisionTraceRecord: Sendable {
+    /// A SwiftDecision lifecycle checkpoint.
+    case lifecycle(DecisionTraceEvent)
+
+    /// A SpecificationCore evaluation event.
+    case specification(SpecificationTraceEvent)
+
+    /// The start or point position used to order this record within its invocation.
+    public var position: SpecificationTracePosition? {
+        switch self {
+        case let .lifecycle(event): event.position
+        case let .specification(event): event.startPosition
+        }
+    }
+}
+
+/// A merged, invocation-local snapshot of lifecycle checkpoints and specification spans.
+public struct DecisionTraceSnapshot: Sendable {
+    /// Records ordered by their shared timeline sequence.
+    public let records: [DecisionTraceRecord]
+
+    fileprivate init(records: [DecisionTraceRecord]) {
+        self.records = records
     }
 }
 
@@ -228,6 +266,13 @@ public typealias DecisionMetricsHandler = @Sendable (DecisionMetric) -> Void
 /// concurrently, so implementations should be thread-safe and return promptly.
 public typealias SpecificationTraceHandler = @Sendable ([SpecificationTraceEvent]) -> Void
 
+/// A synchronous, sendable callback for the merged timeline from one decision invocation.
+///
+/// It runs once for each invocation with tracing enabled, including calls that throw or are
+/// cancelled. Calls on one engine can invoke it concurrently. Implementations should be
+/// thread-safe and return promptly.
+public typealias DecisionTraceHandler = @Sendable (DecisionTraceSnapshot) -> Void
+
 /// The final state of a typed decision.
 public enum DecisionOutcome<Value: Sendable>: Sendable {
     /// The model result satisfied the selected policy.
@@ -258,6 +303,12 @@ public struct DecisionResult<Value: Sendable>: Sendable {
     /// These events contain no request or result values. A `specificationTraceHandler` also receives
     /// events produced before a decision throws.
     public let specificationTrace: [SpecificationTraceEvent]
+
+    /// Lifecycle and SpecificationCore records merged by their shared monotonic positions.
+    /// Core events without an explicit timeline position are omitted from this view.
+    public var orderedTrace: DecisionTraceSnapshot {
+        makeDecisionTraceSnapshot(lifecycleEvents: trace, specificationEvents: specificationTrace)
+    }
 
     /// Returns the accepted or fallback value, or `nil` after abstention.
     public var value: Value? {
@@ -341,7 +392,7 @@ private final class DecisionTimeoutRace<Value: Sendable>: @unchecked Sendable {
 
                 let operationTask = Task.detached {
                     do {
-                        self.resolve(.success(try await operation()))
+                        try self.resolve(.success(await operation()))
                     } catch {
                         self.resolve(.failure(error))
                     }
@@ -443,6 +494,7 @@ public struct DecisionEngine: Sendable {
     private let configuration: Configuration
     private let metricsHandler: DecisionMetricsHandler?
     private let specificationTraceHandler: SpecificationTraceHandler?
+    private let decisionTraceHandler: DecisionTraceHandler?
 
     /// Creates an engine around any asynchronous decision backend.
     ///
@@ -451,16 +503,19 @@ public struct DecisionEngine: Sendable {
     ///   - configuration: Runtime policies, timeout, and trace collection mode.
     ///   - metricsHandler: Optional callback for content-free measurements of completed or failed calls.
     ///   - specificationTraceHandler: Optional callback for SpecificationCore events, including failed calls.
+    ///   - decisionTraceHandler: Optional callback for the merged timeline, including failed calls.
     public init(
         backend: some DecisionBackend,
         configuration: Configuration = Configuration(),
         metricsHandler: DecisionMetricsHandler? = nil,
-        specificationTraceHandler: SpecificationTraceHandler? = nil
+        specificationTraceHandler: SpecificationTraceHandler? = nil,
+        decisionTraceHandler: DecisionTraceHandler? = nil
     ) {
         self.backend = backend
         self.configuration = configuration
         self.metricsHandler = metricsHandler
         self.specificationTraceHandler = specificationTraceHandler
+        self.decisionTraceHandler = decisionTraceHandler
     }
 
     /// Evaluates a boolean statement using the fixed option order `[false, true]`.
@@ -470,7 +525,7 @@ public struct DecisionEngine: Sendable {
         context: String,
         fallback: Bool? = nil
     ) async throws -> DecisionResult<Bool> {
-        try await withObservability(for: .noul) { specificationRecorder in
+        try await withObservability(for: .noul) { traceSession in
             let prompt = DecisionPrompt(
                 id: id,
                 kind: .noul,
@@ -478,13 +533,14 @@ public struct DecisionEngine: Sendable {
                 context: context,
                 options: [
                     DecisionOption(id: "false", description: "false: no, the statement does not hold"),
-                    DecisionOption(id: "true", description: "true: yes, the statement holds")
+                    DecisionOption(id: "true", description: "true: yes, the statement holds"),
                 ]
             )
             let value = try await evaluate(
                 prompt,
                 fallbackIndex: fallback.map { $0 ? 1 : 0 },
-                specificationRecorder: specificationRecorder
+                specificationRecorder: traceSession?.specificationRecorder,
+                traceCollector: traceSession?.traceCollector
             )
             return map(value) { $0 == 1 }
         }
@@ -498,7 +554,7 @@ public struct DecisionEngine: Sendable {
         options: [ChoiceOption<Label>],
         fallback: Label? = nil
     ) async throws -> DecisionResult<Label> {
-        try await withObservability(for: .choice) { specificationRecorder in
+        try await withObservability(for: .choice) { traceSession in
             guard Set(options.map(\.label)).count == options.count else {
                 throw DecisionError.invalidRequest("choice labels must be unique")
             }
@@ -523,7 +579,8 @@ public struct DecisionEngine: Sendable {
             let selected = try await evaluate(
                 prompt,
                 fallbackIndex: fallbackIndex,
-                specificationRecorder: specificationRecorder
+                specificationRecorder: traceSession?.specificationRecorder,
+                traceCollector: traceSession?.traceCollector
             )
             return map(selected) { options[$0].label }
         }
@@ -537,7 +594,7 @@ public struct DecisionEngine: Sendable {
         levels: [(description: String, value: Double)],
         fallback: ScoreValue? = nil
     ) async throws -> DecisionResult<ScoreValue> {
-        try await withObservability(for: .score) { specificationRecorder in
+        try await withObservability(for: .score) { traceSession in
             guard levels.count >= 2, levels.allSatisfy({ $0.value.isFinite }) else {
                 throw DecisionError.invalidRequest("score requires at least two levels with finite numeric values")
             }
@@ -556,7 +613,8 @@ public struct DecisionEngine: Sendable {
             let evaluated = try await evaluate(
                 prompt,
                 fallbackIndex: fallback.map(\.level),
-                specificationRecorder: specificationRecorder
+                specificationRecorder: traceSession?.specificationRecorder,
+                traceCollector: traceSession?.traceCollector
             )
             let mappedOutcome = mapOutcome(evaluated.outcome) { index in
                 ScoreValue(
@@ -583,22 +641,23 @@ public struct DecisionEngine: Sendable {
 
     private func withObservability<Value: Sendable>(
         for kind: DecisionKind,
-        operation: (SpecificationTraceRecorder?) async throws -> DecisionResult<Value>
+        operation: (DecisionTraceSession?) async throws -> DecisionResult<Value>
     ) async throws -> DecisionResult<Value> {
         let startedAt = ProcessInfo.processInfo.systemUptime
-        let specificationRecorder = configuration.traceMode == .enabled ? SpecificationTraceRecorder() : nil
+        let traceSession = configuration.traceMode == .enabled ? DecisionTraceSession() : nil
         do {
             let result: DecisionResult<Value>
-            if let specificationRecorder {
-                result = try await operation(specificationRecorder)
+            if let traceSession {
+                result = try await operation(traceSession)
             } else {
                 result = try await SpecificationTraceRuntime.withoutRecording {
                     try await operation(nil)
                 }
             }
             let durationSeconds = max(ProcessInfo.processInfo.systemUptime - startedAt, 0)
-            if let specificationRecorder {
-                specificationTraceHandler?(specificationRecorder.events)
+            if let traceSession {
+                specificationTraceHandler?(traceSession.specificationRecorder.events)
+                decisionTraceHandler?(result.orderedTrace)
             }
             metricsHandler?(DecisionMetric(
                 kind: kind,
@@ -608,8 +667,9 @@ public struct DecisionEngine: Sendable {
             return result
         } catch {
             let durationSeconds = max(ProcessInfo.processInfo.systemUptime - startedAt, 0)
-            if let specificationRecorder {
-                specificationTraceHandler?(specificationRecorder.events)
+            if let traceSession {
+                specificationTraceHandler?(traceSession.specificationRecorder.events)
+                decisionTraceHandler?(traceSession.snapshot())
             }
             metricsHandler?(DecisionMetric(
                 kind: kind,
@@ -631,13 +691,14 @@ public struct DecisionEngine: Sendable {
     private func evaluate(
         _ prompt: DecisionPrompt,
         fallbackIndex: Int?,
-        specificationRecorder: SpecificationTraceRecorder?
+        specificationRecorder: SpecificationTraceRecorder?,
+        traceCollector: DecisionTraceCollector?
     ) async throws -> DecisionResult<Int> {
         try Task.checkCancellation()
         guard configuration.policies.isValid else {
             throw DecisionError.invalidRequest("policy thresholds must be between 0 and 1")
         }
-        if let timeout = configuration.timeout, (!timeout.isFinite || timeout < 0) {
+        if let timeout = configuration.timeout, !timeout.isFinite || timeout < 0 {
             throw DecisionError.invalidRequest("timeout must be a finite, nonnegative number of seconds")
         }
 
@@ -662,8 +723,7 @@ public struct DecisionEngine: Sendable {
             throw DecisionError.invalidRequest("id, instructions, context, and at least two unique options are required")
         }
 
-        var trace = DecisionTraceCollector(mode: configuration.traceMode)
-        trace.record(.requestValidated)
+        traceCollector?.record(.requestValidated)
         let policyRouter = AsyncFirstMatchSpec<DecisionKind, DecisionPolicy>.builder()
             .addPredicate({ $0 == .noul }, result: configuration.policies.noul)
             .addPredicate({ $0 == .choice }, result: configuration.policies.choice)
@@ -683,7 +743,7 @@ public struct DecisionEngine: Sendable {
         guard let policy = selectedPolicy else {
             throw DecisionError.noPolicySelected
         }
-        trace.record(.policySelected, detail: prompt.kind.rawValue)
+        traceCollector?.record(.policySelected, detail: prompt.kind.rawValue)
 
         let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, timeout = configuration.timeout] request in
             if let timeout {
@@ -693,7 +753,7 @@ public struct DecisionEngine: Sendable {
             }
             return try await backend.predict(for: request)
         }.tracedAsync("backend prediction")
-        trace.record(.inferenceStarted, detail: "\(prompt.options.count) options")
+        traceCollector?.record(.inferenceStarted, detail: "\(prompt.options.count) options")
         let predictionResult: DecisionPrediction?
         if let specificationRecorder {
             predictionResult = try await SpecificationTraceRuntime.decideAsync(
@@ -707,7 +767,7 @@ public struct DecisionEngine: Sendable {
         guard let prediction = predictionResult else {
             throw DecisionError.invalidPrediction("backend returned no result")
         }
-        trace.record(.inferenceCompleted, detail: prediction.modelIdentifier)
+        traceCollector?.record(.inferenceCompleted, detail: prediction.modelIdentifier)
 
         let predictionIsValid = AnyAsyncSpecification<DecisionPrediction> { output in
             output.probabilities.count == prompt.options.count
@@ -727,7 +787,7 @@ public struct DecisionEngine: Sendable {
         guard isPredictionValid else {
             throw DecisionError.invalidPrediction("expected \(prompt.options.count) finite, nonnegative probabilities summing to 1")
         }
-        trace.record(.outputValidated)
+        traceCollector?.record(.outputValidated)
 
         let selectedIndex = prediction.probabilities.indices.max {
             prediction.probabilities[$0] < prediction.probabilities[$1]
@@ -766,12 +826,12 @@ public struct DecisionEngine: Sendable {
         } else {
             outcome = .abstained(reason: reason)
         }
-        trace.record(.resolved, detail: outcomeName(outcome))
+        traceCollector?.record(.resolved, detail: outcomeName(outcome))
         return DecisionResult(
             outcome: outcome,
             confidence: confidence,
             probabilities: prediction.probabilities,
-            trace: trace.events,
+            trace: traceCollector?.events ?? [],
             specificationTrace: specificationRecorder?.events ?? []
         )
     }
@@ -817,16 +877,50 @@ public struct DecisionEngine: Sendable {
     }
 }
 
-private struct DecisionTraceCollector {
-    private let mode: DecisionTraceMode
+private final class DecisionTraceSession {
+    let timeline: SpecificationTraceTimeline
+    let specificationRecorder: SpecificationTraceRecorder
+    let traceCollector: DecisionTraceCollector
+
+    init() {
+        let timeline = SpecificationTraceTimeline()
+        self.timeline = timeline
+        specificationRecorder = SpecificationTraceRecorder(timeline: timeline)
+        traceCollector = DecisionTraceCollector(timeline: timeline)
+    }
+
+    func snapshot() -> DecisionTraceSnapshot {
+        makeDecisionTraceSnapshot(
+            lifecycleEvents: traceCollector.events,
+            specificationEvents: specificationRecorder.events
+        )
+    }
+}
+
+private final class DecisionTraceCollector {
+    private let timeline: SpecificationTraceTimeline
     private(set) var events: [DecisionTraceEvent] = []
 
-    init(mode: DecisionTraceMode) {
-        self.mode = mode
+    init(timeline: SpecificationTraceTimeline) {
+        self.timeline = timeline
     }
 
-    mutating func record(_ stage: DecisionTraceEvent.Stage, detail: String? = nil) {
-        guard mode == .enabled else { return }
-        events.append(DecisionTraceEvent(stage, detail: detail))
+    func record(_ stage: DecisionTraceEvent.Stage, detail: String? = nil) {
+        events.append(DecisionTraceEvent(stage, detail: detail, position: timeline.mark()))
     }
+}
+
+private func makeDecisionTraceSnapshot(
+    lifecycleEvents: [DecisionTraceEvent],
+    specificationEvents: [SpecificationTraceEvent]
+) -> DecisionTraceSnapshot {
+    let lifecycleRecords = lifecycleEvents.map(DecisionTraceRecord.lifecycle)
+    let specificationRecords = specificationEvents.compactMap { event -> DecisionTraceRecord? in
+        guard event.startPosition != nil else { return nil }
+        return .specification(event)
+    }
+    let records = (lifecycleRecords + specificationRecords).sorted {
+        ($0.position?.sequence ?? .max) < ($1.position?.sequence ?? .max)
+    }
+    return DecisionTraceSnapshot(records: records)
 }
