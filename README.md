@@ -33,7 +33,7 @@ In your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.3.0")
+    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.5.0")
 ],
 ```
 
@@ -154,7 +154,7 @@ Enable the trait in the consuming package:
 ```swift
 .package(
     url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    from: "0.3.0",
+    from: "0.5.0",
     traits: ["MLX"]
 )
 ```
@@ -200,7 +200,7 @@ let backend = ClosureDecisionBackend { prompt in
 
 ## Traces and metrics
 
-Tracing is enabled by default. `result.trace` records ordered, content-free decision stages and model identifiers. `result.specificationTrace` exposes the nested SpecificationCore events produced by request validation, ordered policy routing, backend decision evaluation, output validation, and acceptance policy checks:
+Tracing is enabled by default. `result.trace` records content-free decision lifecycle checkpoints and model identifiers; `result.specificationTrace` retains nested SpecificationCore events for request validation, ordered policy routing, backend evaluation, output validation, and acceptance policy checks. Use `result.orderedTrace` when you need their actual interleaving: lifecycle events have a point position, while Core events retain start and completion positions.
 
 ```swift
 let result = try await engine.choice(
@@ -209,12 +209,25 @@ let result = try await engine.choice(
     options: options
 )
 
-for event in result.specificationTrace {
-    print(event.name, event.outcome, event.durationNanoseconds)
+for record in result.orderedTrace.records {
+    switch record {
+    case let .lifecycle(event):
+        print(event.position.sequence, "checkpoint", event.stage)
+    case let .specification(event):
+        print(
+            event.startPosition?.sequence as Any,
+            "span",
+            event.name,
+            event.outcome,
+            event.completionPosition?.sequence as Any
+        )
+    }
 }
 ```
 
-The SpecificationCore `Tracing` trait is enabled by SwiftDecision for its dependency. Both trace collections omit request and prediction contents. Disable event collection when a call site does not need either trace:
+Timeline sequence numbers order events only within one decision invocation. Render lifecycle checkpoints distinctly from evaluated rules: a checkpoint records that the pipeline reached a stage, while a SpecificationCore span records a rule's outcome. Both trace streams omit request and prediction contents. See [Decision tracing](Documentation/DecisionTracing.md) for merged order, spans, thrown calls, and cancellation.
+
+Disable event collection when a call site does not need traces:
 
 ```swift
 let engine = DecisionEngine(
@@ -223,7 +236,7 @@ let engine = DecisionEngine(
 )
 ```
 
-If a decision throws and there is no `DecisionResult` to inspect, provide `specificationTraceHandler` when creating the engine. SwiftDecision calls it once per decision with the Core events recorded before the error. The event list is empty when validation fails before any Core evaluation. Stable trace names identify `request validation`, `policy routing`, `backend prediction`, `output validation`, and `acceptance policy`; the last stage also shows which threshold failed. `traceMode: .disabled` suppresses both trace collections and this callback.
+If a decision throws and there is no `DecisionResult` to inspect, provide `decisionTraceHandler` to receive the full ordered snapshot, or keep using `specificationTraceHandler` for Core-only events. The merged callback runs once per traced invocation, including validation failures, provider errors, and cancellation; an early failure may produce an empty snapshot. Stable Core span names include `request validation`, `policy routing`, `backend prediction`, `output validation`, and `acceptance policy`. `traceMode: .disabled` suppresses both trace callbacks and trace collections.
 
 An optional `DecisionMetricsHandler` receives one measurement per completed or failed decision. Metrics contain decision kind, monotonic elapsed time, and status; they omit prompts, model outputs, request identifiers, and error text. The callback may run concurrently, so keep it thread-safe and fast. SwiftDecision does not include an exporter or telemetry dependency; applications can forward measurements to their own systems.
 
@@ -251,9 +264,9 @@ swift test --disable-default-traits
 
 CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights.
 
-## Scope of 0.3.0
+## Platform compatibility
 
-SwiftDecision 0.3.0 adds SpecificationCore-backed specification traces to typed Noul, Choice, and Score decisions. It supports iOS 13 and later; apps that need iOS 13 or 14 can stay on this release line. The following 0.4.0 release raises the minimum iOS deployment target to iOS 15. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in 0.3.0.
+SwiftDecision 0.3.x supports iOS 13 and 14. SwiftDecision 0.4.0 raised the minimum deployment target to iOS 15; 0.5.0 retains that minimum and adds the unified decision trace timeline. Apps that need iOS 13 or 14 should constrain SwiftPM to the 0.3 series with `.upToNextMinor(from: "0.3.0")`. Foundation Models / Apple Intelligence adapters, built-in batch scheduling, and agent tool orchestration are not included in 0.5.0.
 
 ## License
 
