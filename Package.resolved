@@ -1,5 +1,5 @@
 {
-  "originHash" : "25fa20938a6ab3d9eb3d920a56e8801cb8031c8c80ebe1b103ec85268c504d62",
+  "originHash" : "1316c62a78ee7326eb88d645cd6afb169195206e44818952f16332a07226a65f",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -24,8 +24,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SoundBlaster/SpecificationCore.git",
       "state" : {
-        "revision" : "2394671f82ce42bbaebcc11d1c1a05a53022fe2f",
-        "version" : "2.0.0"
+        "revision" : "83cfea8ecc47513e6331b4ecd93189c5e6715636"
       }
     },
     {
