@@ -100,6 +100,29 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
             let completion = try XCTUnwrap(event.completionPosition)
             XCTAssertLessThanOrEqual(start.sequence, completion.sequence)
         }
+
+        let requestValidation = try XCTUnwrap(specificationEvents.first { $0.name == "request validation" })
+        let requestValidationCompletion = try XCTUnwrap(requestValidation.completionPosition)
+        let requestValidated = try XCTUnwrap(records.compactMap { record -> DecisionTraceEvent? in
+            guard case let .lifecycle(event) = record, event.stage == .requestValidated else { return nil }
+            return event
+        }.first)
+        XCTAssertLessThan(requestValidationCompletion.sequence, requestValidated.position.sequence)
+
+        let backendPrediction = try XCTUnwrap(specificationEvents.first { $0.name == "backend prediction" })
+        let backendStart = try XCTUnwrap(backendPrediction.startPosition)
+        let backendCompletion = try XCTUnwrap(backendPrediction.completionPosition)
+        let inferenceStarted = try XCTUnwrap(records.compactMap { record -> DecisionTraceEvent? in
+            guard case let .lifecycle(event) = record, event.stage == .inferenceStarted else { return nil }
+            return event
+        }.first)
+        let inferenceCompleted = try XCTUnwrap(records.compactMap { record -> DecisionTraceEvent? in
+            guard case let .lifecycle(event) = record, event.stage == .inferenceCompleted else { return nil }
+            return event
+        }.first)
+        XCTAssertLessThan(inferenceStarted.position.sequence, backendStart.sequence)
+        XCTAssertLessThan(backendStart.sequence, backendCompletion.sequence)
+        XCTAssertLessThan(backendCompletion.sequence, inferenceCompleted.position.sequence)
     }
 
     func testDecisionTraceHandlerMatchesSuccessfulResultTimeline() async throws {
@@ -353,7 +376,7 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
         })
     }
 
-    func testDecisionTraceHandlerReceivesPartialSnapshotWhenCancelled() async {
+    func testDecisionTraceHandlerReceivesPartialSnapshotWhenCancelled() async throws {
         let started = BackendStartSignal()
         let recorder = DecisionTraceSnapshotRecorder()
         let engine = DecisionEngine(
@@ -386,6 +409,13 @@ final class SpecificationCoreIntegrationTests: XCTestCase {
             guard case let .lifecycle(event) = record else { return false }
             return event.stage == .inferenceStarted
         })
+        let cancelledBackend = try XCTUnwrap(snapshots[0].records.compactMap { record -> SpecificationTraceEvent? in
+            guard case let .specification(event) = record, event.name == "backend prediction" else { return nil }
+            return event
+        }.first)
+        XCTAssertEqual(cancelledBackend.outcome, .cancelled)
+        XCTAssertNotNil(cancelledBackend.startPosition)
+        XCTAssertNotNil(cancelledBackend.completionPosition)
     }
 
     func testConcurrentDecisionsHaveIndependentOrderedTimelines() async throws {
