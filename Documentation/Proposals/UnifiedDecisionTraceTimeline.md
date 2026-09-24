@@ -1,6 +1,6 @@
 # Proposal: Unified decision trace timeline
 
-**Status:** Implementation in SwiftDecision PR #12
+**Status:** Implemented in SwiftDecision; included in the planned 0.5.0 release
 
 **Date:** 2026-09-24
 
@@ -105,4 +105,4 @@ The Oracle history screen in SwiftDecision-Examples is a useful integration test
 
 ## Implementation note
 
-The implementation exposes `DecisionResult.orderedTrace`, `DecisionTraceSnapshot.records`, and the optional `DecisionEngine.decisionTraceHandler`. SwiftDecision currently resolves SpecificationCore to the merge commit for PR #11 because the published 2.0.0 tag predates `SpecificationTraceTimeline`. Replace this revision pin with the next SpecificationCore release that contains the API.
+The implementation exposes `DecisionResult.orderedTrace`, `DecisionTraceSnapshot.records`, and the optional `DecisionEngine.decisionTraceHandler`. SwiftDecision depends on SpecificationCore 2.1.0, which provides the public operation-scoped timeline API used to merge lifecycle checkpoints with Core spans.

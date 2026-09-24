@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+## 0.5.0 - 2026-09-24
+
+### Added
+
+- Add an invocation-scoped `orderedTrace` that merges SwiftDecision lifecycle checkpoints with SpecificationCore spans on one monotonic timeline.
+- Add `decisionTraceHandler` snapshots for successful, abstaining, fallback, failed, and cancelled decisions.
+
+### Changed
+
+- Preserve the existing `trace`, `specificationTrace`, and `specificationTraceHandler` APIs alongside the merged timeline.
+
 ## 0.4.0
 
 ### Changed
