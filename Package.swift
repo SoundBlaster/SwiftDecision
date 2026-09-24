@@ -20,7 +20,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/SoundBlaster/SpecificationCore.git",
-            revision: "83cfea8ecc47513e6331b4ecd93189c5e6715636",
+            from: "2.1.0",
             traits: ["Tracing"]
         ),
         .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.6"),

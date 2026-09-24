@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-24
+
 ### Added
 
 - Add an invocation-scoped `orderedTrace` that merges SwiftDecision lifecycle checkpoints with SpecificationCore spans on one monotonic timeline.

@@ -105,4 +105,4 @@ The Oracle history screen in SwiftDecision-Examples is a useful integration test
 
 ## Implementation note
 
-The implementation exposes `DecisionResult.orderedTrace`, `DecisionTraceSnapshot.records`, and the optional `DecisionEngine.decisionTraceHandler`. SwiftDecision currently resolves SpecificationCore to merge commit `83cfea8ecc47513e6331b4ecd93189c5e6715636`, which contains the merged PR #11 API. Once SpecificationCore 2.1.0 is published, SwiftDecision should replace this temporary revision pin with the version requirement before its 0.5.0 release.
+The implementation exposes `DecisionResult.orderedTrace`, `DecisionTraceSnapshot.records`, and the optional `DecisionEngine.decisionTraceHandler`. SwiftDecision depends on SpecificationCore 2.1.0, which provides the public operation-scoped timeline API used to merge lifecycle checkpoints with Core spans.
