@@ -119,7 +119,7 @@ Compare these strategies on the same evaluation set before exposing that compati
 - [OpenAI SDKs and CLI](https://developers.openai.com/api/docs/libraries) — official SDK availability and community-maintained Swift libraries.
 - [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) — schema-constrained output and refusal handling.
 - [Model guidance](https://developers.openai.com/api/docs/guides/latest-model) — model selection and Responses API capabilities.
-- [SwiftJev](https://github.com/d-date/swift-jev) — current Jev-like typed-decision API shape for comparison; not an OpenAI SDK or model.
+- [SwiftJev](https://github.com/SoundBlaster/SwiftJev) — current SwiftDecision provider package and Jev-like typed-decision API shape for comparison; not an OpenAI SDK or model.
 
 ## Standards and references
 
