@@ -1,25 +1,27 @@
 # Roadmap: OpenAI Luna decision backend
 
-**Status:** Proposed roadmap; implementation not started
+**Status:** Proposed roadmap; Decisions API announced, detailed API contract and SDK coverage not yet confirmed
 
-**Date:** 2026-09-29
+**Date:** 2026-09-30
 
 **Scope:** Add an optional hosted backend that provides Jev-like typed decisions through OpenAI's API and a Swift SDK, while keeping SwiftDecision's policy and result handling in control.
 
 ## Summary
 
-Implement a separate provider adapter for `DecisionBackend` that uses OpenAI's newly announced Decisions API, reported to be built on GPT-6 Luna. Prefer that purpose-built decision endpoint over prompting Luna through the general Responses API. The adapter will support the package's existing `noul`, `choice`, and `score` request kinds and produce the probability vector expected by `DecisionPrediction`.
+Implement a separate provider adapter for `DecisionBackend` that uses OpenAI's newly announced Decisions API, which OpenAI says focuses Luna's intelligence on developer-defined questions with finite, predefined answers. Prefer that purpose-built decision endpoint over prompting Luna through the general Responses API. The adapter will support the package's existing `noul`, `choice`, and `score` request kinds and produce the probability vector expected by `DecisionPrediction`.
 
-This is Jev-like behavior, not the Jev model or its learned/calibrated decision head. The New Stack reports a dedicated Decisions API built on Luna, with predefined answers, confidence scores, and a 150 ms response time; its pricing and several API details remain undisclosed. Treat those details as press-reported until confirmed in OpenAI's API reference and measured independently. If a general-purpose Luna endpoint is used as a compatibility path, Structured Outputs can constrain response shape but cannot establish calibrated probabilities or decision quality.
+This is Jev-like behavior, not the Jev model or its learned/calibrated decision head. OpenAI's DevDay announcement confirms the Decisions API, its Luna basis, finite predefined answers, text and image context, and classification/routing/agent-next-action use cases. It describes an API capability using Luna, not a newly announced standalone model ID. The New Stack additionally reports confidence scores and a 150 ms response time versus 1.6 seconds for Luna, but OpenAI's announcement does not specify these metrics or the API's price. Treat them as press-reported until confirmed in first-party API documentation and measured independently. If a general-purpose Luna endpoint is used as a compatibility path, Structured Outputs can constrain response shape but cannot establish calibrated probabilities or decision quality.
 
 The adapter should live in a separate SwiftPM product/package, following the existing boundary used by SwiftJev: provider transport remains outside the core decision library. The OpenAI model identifier and SDK must be configurable and replaceable.
 
 ## Current evidence and assumptions
 
 - OpenAI announced GPT-6 Luna for the Responses and Chat Completions APIs on September 22, 2026. The current model catalog identifies `gpt-6-luna`, supports text and image input, Structured Outputs, and lists $0.10 per million input tokens and $0.50 per million output tokens at the standard tier. Pricing, limits, and availability can change; confirm them again before release.
-- On September 29, The New Stack reported that OpenAI announced a separate Decisions API at DevDay, based on Luna and in limited preview, with broad rollout planned in the coming days. The report says it returns developer-defined choices with confidence scores in 150 ms versus 1.6 seconds for GPT-6 Luna, while price per call, candidate limit, and fine-tuning support were still unknown. The OpenAI API changelog and model catalog checked for this roadmap do not yet document this endpoint. Verify first-party API documentation and access before depending on it.
+- OpenAI's September 29 DevDay recap officially announces Decisions API. It focuses Luna's intelligence on developer-defined questions with finite predefined answers, accepts text or image context, and targets classification, routing, and choosing an agent's next action. OpenAI says limited preview is available and broad release is planned in the coming days.
+- The OpenAI API changelog, checked September 30, includes September 29 API announcements for GPT-6.1 Sol and Agents API computer use, but does not yet document Decisions API. The API model catalog also documents GPT-6 Luna endpoints, not a separate Decisions API endpoint or contract. The product announcement is confirmed; request/response schema, authentication details, SDK surface, confidence semantics, option limits, pricing, and preview enrollment must still be verified through first-party technical documentation or an authorized preview.
+- The New Stack's September 29 report says Decisions API returns developer-defined choices with confidence scores in 150 ms versus 1.6 seconds for GPT-6 Luna, and says price per call, candidate limit, and fine-tuning support were unknown. OpenAI's announcement does not confirm those claims; measure and verify them independently.
 - The September 25 API changelog reports a fix to image encoding that affected GPT-6 Luna and GPT-6 Sol. The first adapter scope is text-only, so image support is excluded until a separate evaluation warrants it.
-- OpenAI's SDK directory lists Swift libraries as community-maintained and does not list a first-party Swift SDK. SDK selection must check maintenance, API coverage (Responses and Structured Outputs), supported platforms, concurrency safety, licensing, and transitive dependencies. Keep the API calls behind a narrow internal client protocol so the selected SDK can be replaced.
+- OpenAI's SDK directory lists Swift libraries under community libraries and states that OpenAI does not verify their correctness or security; it does not list a first-party Swift SDK. SDK selection must check maintenance, Decisions API coverage (once documented), supported platforms, concurrency safety, licensing, and transitive dependencies. Keep the API calls behind a narrow internal client protocol so the selected SDK can be replaced.
 - This package supports iOS 15 and macOS 10.15. The SDK and product split must preserve the core package's current platform and dependency behavior; hosted credentials must never be embedded in a client app.
 - The existing Jev-like shape in SwiftDecision is `DecisionPrompt` (`noul`, `choice`, `score`) to `[Double]` probabilities in option order, followed by engine-owned validation and acceptance policy.
 
@@ -62,15 +64,15 @@ Compare these strategies on the same evaluation set before exposing that compati
 
 ## Roadmap
 
-### Phase 1 — Decisions API and SDK contract
+### Phase 1 — Preview access, API contract, and SDK
 
-- Verify OpenAI's first-party Decisions API reference, limited-preview enrollment, availability, authentication, request/response schema, supported question kinds, confidence meaning, option limits, SDK surface, errors, and pricing.
-- Confirm whether an OpenAI-maintained SDK supports this endpoint. OpenAI's SDK directory currently lists Swift libraries as community-maintained; select a community SDK only after verifying preview endpoint coverage, license, platform support, concurrency behavior, and maintenance. Keep the SDK behind a narrow internal client protocol.
+- The product announcement is confirmed; obtain limited-preview access and verify OpenAI's first-party technical reference, authentication, request/response schema, supported question kinds, confidence meaning, option limits, errors, and pricing.
+- Confirm whether an OpenAI-maintained SDK supports this endpoint. OpenAI's SDK directory currently lists Swift libraries as community-maintained; select a community SDK only after verifying Decisions API coverage, license, platform support, concurrency behavior, and maintenance. Keep the SDK behind a narrow internal client protocol.
 - Use a fake client to prototype `noul`, `choice`, and `score` mappings; gate live preview calls behind explicit configuration and avoid paid calls in default CI.
 - Confirm the separate provider package/product boundary so OpenAI dependencies and credentials remain outside SwiftDecision core.
 - If the Decisions API is unavailable to this project or has no usable SDK contract, evaluate the general Responses API path as a separately named experimental fallback; compare its three score-generation strategies and document refusal, incomplete output, rate-limit, timeout, and cancellation behavior.
 
-**Exit criteria:** first-party endpoint documentation or a preview contract available to the project, an SDK/client and license decision, exact request/response mapping, and a recorded explanation if the experimental Responses API fallback is selected.
+**Exit criteria:** preview access or a first-party technical contract available to the project, an SDK/client and license decision, exact request/response mapping, and a recorded explanation if the experimental Responses API fallback is selected.
 
 ### Phase 2 — Minimal adapter
 
@@ -111,10 +113,11 @@ Compare these strategies on the same evaluation set before exposing that compati
 - [ ] SDK license and provenance are recorded, and the project does not imply first-party OpenAI support for a community SDK.
 - [ ] Decisions API pricing, model availability, API/SDK support, preview terms, and rate limits are rechecked before release.
 
-## Sources checked on 2026-09-29
+## Sources checked on 2026-09-30
 
-- [OpenAI API changelog](https://developers.openai.com/api/docs/changelog) — GPT-6 Luna launch (September 22) and image-encoding fix (September 25).
-- [The New Stack: OpenAI answers TypeSafe's Jev with a Decision API built on Luna](https://thenewstack.io/openai-decision-api-luna/) — reports a Luna-based Decisions API, limited preview, 150 ms responses, planned broad rollout, and currently undisclosed pricing/candidate limits/tuning. Secondary reporting; verify against first-party docs.
+- [OpenAI DevDay 2026 Recap](https://openai.com/index/devday-2026-recap/) — official announcement of Decisions API, Luna basis, finite predefined answers, text/image context, intended use cases, limited preview, and planned broad release.
+- [OpenAI API changelog](https://developers.openai.com/api/docs/changelog) — GPT-6 Luna launch (September 22), image-encoding fix (September 25), and September 29 API updates; no Decisions API technical entry as of September 30.
+- [The New Stack: OpenAI answers TypeSafe's Jev with a Decision API built on Luna](https://thenewstack.io/openai-decision-api-luna/) — secondary reporting of confidence scores, 150 ms responses, planned broad rollout, and unknown pricing/candidate limits/tuning. Claims beyond OpenAI's recap remain unverified.
 - [GPT-6 Luna model catalog](https://developers.openai.com/api/docs/models/gpt-6-luna) — endpoints, supported features, limits, and pricing.
 - [OpenAI SDKs and CLI](https://developers.openai.com/api/docs/libraries) — official SDK availability and community-maintained Swift libraries.
 - [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs) — schema-constrained output and refusal handling.
