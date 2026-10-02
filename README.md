@@ -271,3 +271,16 @@ SwiftDecision 0.3.x supports iOS 13 and 14. SwiftDecision 0.4.0 raised the minim
 ## License
 
 SwiftDecision is available under the [Apache License 2.0](LICENSE). Model weights have their own terms and are not included in this repository.
+
+### Shared inference budget
+
+Create `try DecisionBudget(timeout: seconds)` once per logical operation and pass
+that same value as `budget:` to `choice`, `noul`, and `score`. Its monotonic deadline
+starts at initialization and is never reset by a call or a copy. Each inference
+uses the smaller of the remaining budget and `Configuration.timeout`; omitting a
+budget preserves the existing per-inference timeout behavior. An expired budget
+throws `DecisionError.timedOut` without calling the backend. Cancellation still
+propagates. A budget bounds inference waiting, not application work after it.
+
+`DecisionFailureCategory` provides provider-independent categories. Provider
+adapters can refine errors; consumers retain retry and fallback policy.
