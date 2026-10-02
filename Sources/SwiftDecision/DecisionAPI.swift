@@ -523,7 +523,8 @@ public struct DecisionEngine: Sendable {
         id: String = UUID().uuidString,
         statement: String,
         context: String,
-        fallback: Bool? = nil
+        fallback: Bool? = nil,
+        budget: DecisionBudget? = nil
     ) async throws -> DecisionResult<Bool> {
         try await withObservability(for: .noul) { traceSession in
             let prompt = DecisionPrompt(
@@ -540,7 +541,8 @@ public struct DecisionEngine: Sendable {
                 prompt,
                 fallbackIndex: fallback.map { $0 ? 1 : 0 },
                 specificationRecorder: traceSession?.specificationRecorder,
-                traceCollector: traceSession?.traceCollector
+                traceCollector: traceSession?.traceCollector,
+                budget: budget
             )
             return map(value) { $0 == 1 }
         }
@@ -552,7 +554,8 @@ public struct DecisionEngine: Sendable {
         instructions: String,
         context: String,
         options: [ChoiceOption<Label>],
-        fallback: Label? = nil
+        fallback: Label? = nil,
+        budget: DecisionBudget? = nil
     ) async throws -> DecisionResult<Label> {
         try await withObservability(for: .choice) { traceSession in
             guard Set(options.map(\.label)).count == options.count else {
@@ -580,7 +583,8 @@ public struct DecisionEngine: Sendable {
                 prompt,
                 fallbackIndex: fallbackIndex,
                 specificationRecorder: traceSession?.specificationRecorder,
-                traceCollector: traceSession?.traceCollector
+                traceCollector: traceSession?.traceCollector,
+                budget: budget
             )
             return map(selected) { options[$0].label }
         }
@@ -592,7 +596,8 @@ public struct DecisionEngine: Sendable {
         instructions: String,
         context: String,
         levels: [(description: String, value: Double)],
-        fallback: ScoreValue? = nil
+        fallback: ScoreValue? = nil,
+        budget: DecisionBudget? = nil
     ) async throws -> DecisionResult<ScoreValue> {
         try await withObservability(for: .score) { traceSession in
             guard levels.count >= 2, levels.allSatisfy({ $0.value.isFinite }) else {
@@ -614,7 +619,8 @@ public struct DecisionEngine: Sendable {
                 prompt,
                 fallbackIndex: fallback.map(\.level),
                 specificationRecorder: traceSession?.specificationRecorder,
-                traceCollector: traceSession?.traceCollector
+                traceCollector: traceSession?.traceCollector,
+                budget: budget
             )
             let mappedOutcome = mapOutcome(evaluated.outcome) { index in
                 ScoreValue(
@@ -692,7 +698,8 @@ public struct DecisionEngine: Sendable {
         _ prompt: DecisionPrompt,
         fallbackIndex: Int?,
         specificationRecorder: SpecificationTraceRecorder?,
-        traceCollector: DecisionTraceCollector?
+        traceCollector: DecisionTraceCollector?,
+        budget: DecisionBudget?
     ) async throws -> DecisionResult<Int> {
         try Task.checkCancellation()
         guard configuration.policies.isValid else {
@@ -746,7 +753,11 @@ public struct DecisionEngine: Sendable {
         traceCollector?.record(.policySelected, detail: prompt.kind.rawValue)
 
         let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, timeout = configuration.timeout] request in
-            if let timeout {
+            try Task.checkCancellation()
+            let remaining = budget?.remainingTime
+            if let remaining, remaining <= 0 { throw DecisionError.timedOut }
+            let effectiveTimeout = remaining.map { min(timeout ?? $0, $0) } ?? timeout
+            if let timeout = effectiveTimeout {
                 return try await DecisionTimeoutRace<DecisionPrediction>().value(timeout: timeout) {
                     try await backend.predict(for: request)
                 }
