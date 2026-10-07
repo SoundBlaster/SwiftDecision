@@ -36,7 +36,15 @@ let result = try await engine.choice(
 )
 ```
 
-The model defaults to `gpt-6-luna`. Override it with the `model` initializer argument when using another Decisions-compatible model. Requests are sent to `POST https://api.openai.com/v1/decisions`; retries are disabled.
+The model defaults to `gpt-6-luna`. Override it with the `model` initializer argument when using another Decisions-compatible model. The `baseURL` defaults to `https://api.openai.com/v1`; the backend appends `/decisions`. For an OpenAI-compatible HTTPS gateway, pass its versioned API root:
+
+```swift
+let backend = try OpenAIDecisionsBackend(
+    baseURL: URL(string: "https://gateway.example.com/v1")!
+)
+```
+
+`baseURL` must be an absolute HTTPS URL without embedded credentials, query, or fragment. Redirects are rejected so bearer credentials are never forwarded to another host. Retries are disabled.
 
 ## Mapping and validation
 

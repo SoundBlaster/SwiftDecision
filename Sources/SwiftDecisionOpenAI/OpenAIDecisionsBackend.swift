@@ -131,9 +131,9 @@ public enum OpenAIDecisionBackendError: Error, Sendable, Equatable, CustomString
 /// SwiftDecision's Noul to a `predicate` question, and Choice and Score to their native question
 /// types. The engine remains responsible for acceptance policy, abstention, and fallbacks.
 public struct OpenAIDecisionsBackend: DecisionBackend {
-    private static let endpoint = URL(string: "https://api.openai.com/v1/decisions")!
     private static let questionName = "swiftdecision"
 
+    private let endpoint: URL
     private let apiKey: String
     private let model: String
     private let timeout: TimeInterval
@@ -143,11 +143,13 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
     ///
     /// - Parameters:
     ///   - apiKey: OpenAI API key. When omitted, `OPENAI_API_KEY` is read from the environment.
+    ///   - baseURL: HTTPS API root ending before the Decisions path. Defaults to `https://api.openai.com/v1`.
     ///   - model: Decisions-compatible model identifier. Defaults to `gpt-6-luna`.
     ///   - timeout: Per-request timeout in seconds.
     ///   - transport: HTTP transport. Inject a fixture transport for offline integrations.
     public init(
         apiKey: String? = nil,
+        baseURL: URL = URL(string: "https://api.openai.com/v1")!,
         model: String = "gpt-6-luna",
         timeout: TimeInterval = 10,
         transport: any OpenAIHTTPTransport = URLSessionOpenAIHTTPTransport()
@@ -159,12 +161,32 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
         else {
             throw OpenAIDecisionBackendError.missingAPIKey
         }
+        guard let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
+              components.scheme?.lowercased() == "https",
+              let host = components.host, !host.isEmpty,
+              components.user == nil,
+              components.password == nil,
+              components.query == nil,
+              components.fragment == nil
+        else {
+            throw OpenAIDecisionBackendError.invalidConfiguration(
+                "baseURL must be an absolute HTTPS URL without credentials, query, or fragment"
+            )
+        }
+        var endpointComponents = components
+        endpointComponents.path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if !endpointComponents.path.isEmpty { endpointComponents.path += "/" }
+        endpointComponents.path += "decisions"
+        guard let endpoint = endpointComponents.url else {
+            throw OpenAIDecisionBackendError.invalidConfiguration("baseURL could not form the Decisions endpoint")
+        }
         guard !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw OpenAIDecisionBackendError.invalidConfiguration("model must be nonempty")
         }
         guard timeout.isFinite, timeout > 0 else {
             throw OpenAIDecisionBackendError.invalidConfiguration("timeout must be finite and positive")
         }
+        self.endpoint = endpoint
         self.apiKey = resolvedAPIKey
         self.model = model
         self.timeout = timeout
@@ -186,7 +208,7 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
         }
 
         let request = OpenAIHTTPRequest(
-            url: Self.endpoint,
+            url: endpoint,
             method: "POST",
             headers: [
                 "Accept": "application/json",

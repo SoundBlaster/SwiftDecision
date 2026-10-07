@@ -67,7 +67,7 @@ Map SwiftDecision requests onto the published Decisions API contract. Preserve c
 
 - `OpenAIDecisionsBackend` implements `DecisionBackend` in the optional `SwiftDecisionOpenAI` product.
 - Credentials are injected or read from `OPENAI_API_KEY`; no key is bundled or included in diagnostics.
-- The official endpoint is fixed; the model and request timeout are configurable, and retries are disabled.
+- The official HTTPS API root is the default; a custom HTTPS API root is configurable for compatible gateways. The model and request timeout are configurable, and retries are disabled.
 - Only complete, validated responses map to `DecisionPrediction`; refusal and malformed responses fail closed.
 - The adapter does not emit prompts, contexts, options, outputs, or secrets to SwiftDecision trace events or metrics.
 
