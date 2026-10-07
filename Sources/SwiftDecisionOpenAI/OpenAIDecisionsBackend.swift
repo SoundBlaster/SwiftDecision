@@ -268,11 +268,10 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
                 throw OpenAIDecisionBackendError.unsupportedPrompt("Choice supports at most 255 options")
             }
         case .score:
-            guard (2 ... 10).contains(prompt.options.count),
-                  prompt.options.map(\.id) == prompt.options.indices.map(String.init)
+            guard prompt.options.map(\.id) == prompt.options.indices.map(String.init)
             else {
                 throw OpenAIDecisionBackendError.unsupportedPrompt(
-                    "Score requires 2 to 10 ordered levels with IDs starting at 0"
+                    "Score requires ordered levels with IDs starting at 0"
                 )
             }
         }
@@ -409,7 +408,7 @@ private struct OpenAIDecisionResponse: Decodable {
 private enum OpenAIDecisionAnswer: Decodable {
     case predicate(name: String?, probability: Double)
     case choice(name: String?, choice: OpenAIChoiceValue, confidence: Double, probabilities: [OpenAIChoiceProbability])
-    case score(name: String?, score: Int64, confidence: Double, probabilities: [OpenAIScoreProbability])
+    case score(name: String?, score: Double, confidence: Double, probabilities: [OpenAIScoreProbability])
     case refusal(name: String?)
     case unknown(name: String?)
 
@@ -440,7 +439,7 @@ private enum OpenAIDecisionAnswer: Decodable {
         case "score":
             self = .score(
                 name: name,
-                score: try container.decode(Int64.self, forKey: .score),
+                score: try container.decode(Double.self, forKey: .score),
                 confidence: try container.decode(Double.self, forKey: .confidence),
                 probabilities: try container.decode([OpenAIScoreProbability].self, forKey: .probabilities)
             )
