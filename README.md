@@ -145,6 +145,8 @@ SwiftDecision validates that backend probabilities match the request, are finite
 
 TypeSafe Jev is available as the separate [`SwiftJev`](https://github.com/SoundBlaster/SwiftJev) package. It conforms to `DecisionBackend` and keeps the hosted provider and HTTP transport outside the core decision library.
 
+OpenAI's Decisions API is available through the optional `SwiftDecisionOpenAI` product in this package. It uses the native `/v1/decisions` REST API without adding an OpenAI SDK or network dependency to the core `SwiftDecision` product. See [OpenAI Decisions](Documentation/OpenAIDecisionsBackend.md) for setup and the current text-only mapping.
+
 ### Native Laya with MLX
 
 The non-default `MLX` SwiftPM Trait enables `LayaMLXBackend`, which runs the English `aac6fef/laya-mlx` checkpoint published by Convai Innovations locally with MLX. It does not invoke Python or download model weights at runtime. Provide a local checkpoint directory. The backend requires Apple Silicon, macOS 14+ or iOS 17+, and SwiftPM 6.3+. SwiftPM can still resolve or fetch optional packages during dependency resolution when the trait is disabled; the trait controls whether the MLX API and products are enabled for the target.

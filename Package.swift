@@ -12,6 +12,7 @@ let package = Package(
     ],
     products: [
         .library(name: "SwiftDecision", targets: ["SwiftDecision"]),
+        .library(name: "SwiftDecisionOpenAI", targets: ["SwiftDecisionOpenAI"]),
         .executable(name: "InboxTriageExample", targets: ["InboxTriageExample"]),
     ],
     traits: [
@@ -38,6 +39,10 @@ let package = Package(
             swiftSettings: [
                 .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
             ]
+        ),
+        .target(
+            name: "SwiftDecisionOpenAI",
+            dependencies: ["SwiftDecision"]
         ),
         .executableTarget(
             name: "InboxTriageExample",
