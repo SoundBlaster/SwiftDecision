@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.7.0 - 2026-10-09
+
+### Added
+
+- Add the optional `SwiftDecisionOpenAI` product for OpenAI's Decisions API, mapping Noul, Choice, and Score to native `predicate`, `choice`, and `score` questions.
+- Support explicit HTTPS API roots for compatible gateways without adding an OpenAI SDK dependency to the core product.
+
+### Fixed
+
+- Preserve the leading slash when constructing the `/decisions` endpoint so the official API root and nested gateway roots resolve correctly.
+
+## 0.6.0 - 2026-10-02
+
+### Added
+
+- Add invocation-scoped `DecisionBudget` values that can bound multiple Noul, Choice, and Score calls.
+- Add provider-independent `DecisionFailureCategory` classification.
+
 ## 0.5.0 - 2026-09-24
 
 ### Added

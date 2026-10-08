@@ -33,7 +33,7 @@ In your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.5.0")
+    .package(url: "https://github.com/SoundBlaster/SwiftDecision.git", from: "0.7.0")
 ],
 ```
 
@@ -52,6 +52,12 @@ Add the product to your target:
 
 ```swift
 .product(name: "SwiftDecision", package: "SwiftDecision")
+```
+
+If you use OpenAI's Decisions API, also add its optional product to the target:
+
+```swift
+.product(name: "SwiftDecisionOpenAI", package: "SwiftDecision")
 ```
 
 ### 2. Make a typed decision
@@ -156,7 +162,7 @@ Enable the trait in the consuming package:
 ```swift
 .package(
     url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    from: "0.5.0",
+    from: "0.7.0",
     traits: ["MLX"]
 )
 ```
