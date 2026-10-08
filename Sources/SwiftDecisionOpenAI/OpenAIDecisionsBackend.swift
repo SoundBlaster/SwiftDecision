@@ -174,9 +174,8 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
             )
         }
         var endpointComponents = components
-        endpointComponents.path = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        if !endpointComponents.path.isEmpty { endpointComponents.path += "/" }
-        endpointComponents.path += "decisions"
+        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        endpointComponents.path = basePath.isEmpty ? "/decisions" : "/\(basePath)/decisions"
         guard let endpoint = endpointComponents.url else {
             throw OpenAIDecisionBackendError.invalidConfiguration("baseURL could not form the Decisions endpoint")
         }
