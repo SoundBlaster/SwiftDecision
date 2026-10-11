@@ -108,7 +108,7 @@ public enum OpenAIDecisionBackendError: Error, Sendable, Equatable, CustomString
     public var description: String {
         switch self {
         case .missingAPIKey:
-            "Set OPENAI_API_KEY or pass apiKey when creating OpenAIDecisionsBackend."
+            "Pass apiKey, or set OPENAI_API_KEY when using the provider default endpoint."
         case let .invalidConfiguration(message):
             "Invalid OpenAI Decisions configuration: \(message)"
         case let .unsupportedPrompt(message):
@@ -142,54 +142,102 @@ public struct OpenAIDecisionsBackend: DecisionBackend {
     /// Creates an OpenAI Decisions backend.
     ///
     /// - Parameters:
-    ///   - apiKey: OpenAI API key. When omitted, `OPENAI_API_KEY` is read from the environment.
-    ///   - baseURL: HTTPS API root ending before the Decisions path. Defaults to `https://api.openai.com/v1`.
+    ///   - apiKey: Credential for this backend. For the provider default only, an omitted key is
+    ///     read from `OPENAI_API_KEY`. Custom endpoints require an explicit key.
+    ///   - endpoint: Provider default, API root, or complete operation URL. The adapter owns the
+    ///     OpenAI default root and `/decisions` operation path.
     ///   - model: Decisions-compatible model identifier. Defaults to `gpt-6-luna`.
     ///   - timeout: Per-request timeout in seconds.
     ///   - transport: HTTP transport. Inject a fixture transport for offline integrations.
     public init(
         apiKey: String? = nil,
-        baseURL: URL = URL(string: "https://api.openai.com/v1")!,
+        endpoint: APIEndpoint = .providerDefault,
         model: String = "gpt-6-luna",
         timeout: TimeInterval = 10,
         transport: any OpenAIHTTPTransport = URLSessionOpenAIHTTPTransport()
     ) throws {
-        let resolvedAPIKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
+        let resolvedAPIKey: String?
+        if case .providerDefault = endpoint {
+            resolvedAPIKey = apiKey ?? ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
+        } else {
+            resolvedAPIKey = apiKey
+        }
         guard let resolvedAPIKey,
               !resolvedAPIKey.isEmpty,
               resolvedAPIKey.unicodeScalars.allSatisfy({ $0.isASCII && !$0.properties.isWhitespace })
         else {
             throw OpenAIDecisionBackendError.missingAPIKey
         }
-        guard let components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false),
-              components.scheme?.lowercased() == "https",
-              let host = components.host, !host.isEmpty,
-              components.user == nil,
-              components.password == nil,
-              components.query == nil,
-              components.fragment == nil
-        else {
-            throw OpenAIDecisionBackendError.invalidConfiguration(
-                "baseURL must be an absolute HTTPS URL without credentials, query, or fragment"
-            )
-        }
-        var endpointComponents = components
-        let basePath = components.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        endpointComponents.path = basePath.isEmpty ? "/decisions" : "/\(basePath)/decisions"
-        guard let endpoint = endpointComponents.url else {
-            throw OpenAIDecisionBackendError.invalidConfiguration("baseURL could not form the Decisions endpoint")
-        }
+        let resolvedEndpoint = try Self.resolve(endpoint)
         guard !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw OpenAIDecisionBackendError.invalidConfiguration("model must be nonempty")
         }
         guard timeout.isFinite, timeout > 0 else {
             throw OpenAIDecisionBackendError.invalidConfiguration("timeout must be finite and positive")
         }
-        self.endpoint = endpoint
+        self.endpoint = resolvedEndpoint
         self.apiKey = resolvedAPIKey
         self.model = model
         self.timeout = timeout
         self.transport = transport
+    }
+
+    /// Compatibility initializer for callers that already provide an API root.
+    ///
+    /// A custom root requires an explicit `apiKey`; environment credentials are reserved for the
+    /// provider default endpoint so they cannot be sent to a gateway by accident.
+    public init(
+        apiKey: String? = nil,
+        baseURL: URL,
+        model: String = "gpt-6-luna",
+        timeout: TimeInterval = 10,
+        transport: any OpenAIHTTPTransport = URLSessionOpenAIHTTPTransport()
+    ) throws {
+        try self.init(
+            apiKey: apiKey,
+            endpoint: .baseURL(baseURL),
+            model: model,
+            timeout: timeout,
+            transport: transport
+        )
+    }
+
+    private static func resolve(_ endpoint: APIEndpoint) throws -> URL {
+        let root: URL
+        let appendOperationPath: Bool
+        switch endpoint {
+        case .providerDefault:
+            root = URL(string: "https://api.openai.com/v1")!
+            appendOperationPath = true
+        case let .baseURL(url):
+            root = url
+            appendOperationPath = true
+        case let .operationURL(url):
+            root = url
+            appendOperationPath = false
+        }
+
+        guard let components = URLComponents(url: root, resolvingAgainstBaseURL: false),
+              let scheme = components.scheme?.lowercased(), ["https", "http"].contains(scheme),
+              let host = components.host, !host.isEmpty,
+              components.user == nil,
+              components.password == nil,
+              components.percentEncodedQuery == nil,
+              components.percentEncodedFragment == nil
+        else {
+            throw OpenAIDecisionBackendError.invalidConfiguration(
+                "endpoint must be an absolute HTTP(S) URL without credentials, query, or fragment"
+            )
+        }
+        guard appendOperationPath else { return root }
+
+        var resolved = components
+        let basePath = components.percentEncodedPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        resolved.percentEncodedPath = basePath.isEmpty ? "/decisions" : "/\(basePath)/decisions"
+        guard let url = resolved.url else {
+            throw OpenAIDecisionBackendError.invalidConfiguration("endpoint could not form the Decisions URL")
+        }
+        return url
     }
 
     public func predict(for prompt: DecisionPrompt) async throws -> DecisionPrediction {

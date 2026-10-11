@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Add provider-neutral `APIEndpoint` configuration for provider defaults, API roots, and complete operation URLs.
+- Let the OpenAI Decisions adapter append `/decisions` to API roots or use a complete operation URL unchanged. Custom endpoints require an explicit API key.
+
 ## 0.7.0 - 2026-10-09
 
 ### Added
