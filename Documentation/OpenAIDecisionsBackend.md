@@ -36,15 +36,20 @@ let result = try await engine.choice(
 )
 ```
 
-The model defaults to `gpt-6-luna`. Override it with the `model` initializer argument when using another Decisions-compatible model. The `baseURL` defaults to `https://api.openai.com/v1`; the backend appends `/decisions`. For an OpenAI-compatible HTTPS gateway, pass its versioned API root:
+The model defaults to `gpt-6-luna`. Override it with the `model` initializer argument when using another Decisions-compatible model. `APIEndpoint` is a provider-neutral value from SwiftDecision; the OpenAI adapter owns the default root (`https://api.openai.com/v1`) and appends `/decisions` to an API root:
 
 ```swift
+import SwiftDecision
+
 let backend = try OpenAIDecisionsBackend(
-    baseURL: URL(string: "https://gateway.example.com/v1")!
+    apiKey: proxyKey,
+    endpoint: .baseURL(URL(string: "https://gateway.example.com/v1")!)
 )
 ```
 
-`baseURL` must be an absolute HTTPS URL without embedded credentials, query, or fragment. Redirects are rejected so bearer credentials are never forwarded to another host. Retries are disabled.
+For a gateway that exposes a complete operation URL, pass `.operationURL(URL(...))`; the adapter uses that URL as-is, including its trailing slash. Both custom endpoint modes require an explicit `apiKey`, so `OPENAI_API_KEY` is never sent to a custom destination by fallback. Endpoints must be absolute HTTP(S) URLs with a host and without embedded credentials, query, or fragment. HTTP is accepted only when explicitly configured as a custom endpoint; the provider default remains HTTPS. Redirects are rejected so bearer credentials are never forwarded to another host. Retries are disabled.
+
+The compatibility `baseURL:` initializer remains available for existing callers and delegates to `.baseURL`. The core `SwiftDecision` package defines only the endpoint selection; provider URL rules and operation paths stay in this adapter.
 
 ## Mapping and validation
 

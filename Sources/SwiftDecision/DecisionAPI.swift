@@ -382,10 +382,10 @@ private final class DecisionTimeoutRace<Value: Sendable>: @unchecked Sendable {
     private var isResolved = false
 
     func value(
-        timeout: TimeInterval,
+        deadline: TimeInterval,
+        clock: any DecisionClock,
         operation: @escaping @Sendable () async throws -> Value
     ) async throws -> Value {
-        let nanoseconds = UInt64(min(timeout * 1_000_000_000, Double(Int64.max)))
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 guard install(continuation) else { return }
@@ -399,8 +399,11 @@ private final class DecisionTimeoutRace<Value: Sendable>: @unchecked Sendable {
                 }
                 let timeoutTask = Task.detached {
                     do {
-                        try await Task.sleep(nanoseconds: nanoseconds)
+                        try await clock.sleep(until: deadline)
+                    } catch is CancellationError {
+                        return
                     } catch {
+                        self.resolve(.failure(error))
                         return
                     }
                     self.resolve(.failure(DecisionError.timedOut))
@@ -492,6 +495,7 @@ public struct DecisionEngine: Sendable {
 
     private let backend: any DecisionBackend
     private let configuration: Configuration
+    private let clock: any DecisionClock
     private let metricsHandler: DecisionMetricsHandler?
     private let specificationTraceHandler: SpecificationTraceHandler?
     private let decisionTraceHandler: DecisionTraceHandler?
@@ -504,15 +508,18 @@ public struct DecisionEngine: Sendable {
     ///   - metricsHandler: Optional callback for content-free measurements of completed or failed calls.
     ///   - specificationTraceHandler: Optional callback for SpecificationCore events, including failed calls.
     ///   - decisionTraceHandler: Optional callback for the merged timeline, including failed calls.
+    ///   - clock: Monotonic clock for per-inference timeouts. A supplied budget owns its clock instead.
     public init(
         backend: some DecisionBackend,
         configuration: Configuration = Configuration(),
         metricsHandler: DecisionMetricsHandler? = nil,
         specificationTraceHandler: SpecificationTraceHandler? = nil,
-        decisionTraceHandler: DecisionTraceHandler? = nil
+        decisionTraceHandler: DecisionTraceHandler? = nil,
+        clock: any DecisionClock = SystemDecisionClock()
     ) {
         self.backend = backend
         self.configuration = configuration
+        self.clock = clock
         self.metricsHandler = metricsHandler
         self.specificationTraceHandler = specificationTraceHandler
         self.decisionTraceHandler = decisionTraceHandler
@@ -752,13 +759,21 @@ public struct DecisionEngine: Sendable {
         }
         traceCollector?.record(.policySelected, detail: prompt.kind.rawValue)
 
-        let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, timeout = configuration.timeout] request in
+        let backendDecision = AnyAsyncDecisionSpec<DecisionPrompt, DecisionPrediction> { [backend, clock, timeout = configuration.timeout] request in
             try Task.checkCancellation()
-            let remaining = budget?.remainingTime
-            if let remaining, remaining <= 0 { throw DecisionError.timedOut }
-            let effectiveTimeout = remaining.map { min(timeout ?? $0, $0) } ?? timeout
-            if let timeout = effectiveTimeout {
-                return try await DecisionTimeoutRace<DecisionPrediction>().value(timeout: timeout) {
+            let activeClock = budget?.clock ?? clock
+            let now = activeClock.now
+            if let budget, budget.deadline <= now { throw DecisionError.timedOut }
+            let configurationDeadline = timeout.map { now + $0 }
+            let deadline: TimeInterval?
+            switch (budget?.deadline, configurationDeadline) {
+            case let (.some(budgetDeadline), .some(configurationDeadline)):
+                deadline = min(budgetDeadline, configurationDeadline)
+            case let (budgetDeadline, configurationDeadline):
+                deadline = budgetDeadline ?? configurationDeadline
+            }
+            if let deadline {
+                return try await DecisionTimeoutRace<DecisionPrediction>().value(deadline: deadline, clock: activeClock) {
                     try await backend.predict(for: request)
                 }
             }

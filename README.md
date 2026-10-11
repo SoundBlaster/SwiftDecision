@@ -290,5 +290,15 @@ budget preserves the existing per-inference timeout behavior. An expired budget
 throws `DecisionError.timedOut` without calling the backend. Cancellation still
 propagates. A budget bounds inference waiting, not application work after it.
 
+`DecisionClock` supplies monotonic `now` values and cancellable `sleep(until:)`
+waiting. Both `DecisionBudget(timeout:clock:)` and `DecisionEngine(..., clock:)`
+accept a custom clock; existing calls use `SystemDecisionClock`, backed by system
+uptime. A supplied budget owns the clock used for its deadline and timeout waiting,
+including any smaller per-inference limit from the engine configuration. Without a
+budget, the engine uses its own clock. Calendar time changes do not affect the
+production clock. Tests can inject a manually advanced clock to check deadlines
+without depending on scheduler timing; the package keeps its existing deployment
+targets.
+
 `DecisionFailureCategory` provides provider-independent categories. Provider
 adapters can refine errors; consumers retain retry and fallback policy.

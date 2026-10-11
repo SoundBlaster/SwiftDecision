@@ -59,5 +59,9 @@ let package = Package(
                 .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
             ]
         ),
+        .testTarget(
+            name: "SwiftDecisionOpenAITests",
+            dependencies: ["SwiftDecision", "SwiftDecisionOpenAI"]
+        ),
     ]
 )
