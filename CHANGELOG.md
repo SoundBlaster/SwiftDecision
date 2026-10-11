@@ -4,8 +4,13 @@
 
 ### Added
 
+- Add injectable `DecisionClock` time and cancellable waiting for inference budgets and timeouts, with a system-uptime default that preserves deployment targets.
 - Add provider-neutral `APIEndpoint` configuration for provider defaults, API roots, and complete operation URLs.
 - Let the OpenAI Decisions adapter append `/decisions` to API roots or use a complete operation URL unchanged. Custom endpoints require an explicit API key.
+
+### Fixed
+
+- Use absolute deadlines when starting timeout tasks, and replace short real-time sleeps in budget tests with manually advanced time.
 
 ## 0.7.0 - 2026-10-09
 
