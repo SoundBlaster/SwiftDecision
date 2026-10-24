@@ -86,13 +86,14 @@ public struct FoundationModelsDecisionBackend: DecisionBackend {
             // Do not attach GeneratedContent or its parsing error: either can contain user text.
             throw DecisionError.invalidPrediction("Foundation Models did not return a probability array")
         }
-        guard probabilities.count == prompt.options.count,
-              probabilities.allSatisfy({ $0.isFinite && (0 ... 1).contains($0) }),
-              abs(probabilities.reduce(0, +) - 1) <= 0.01
-        else {
-            throw DecisionError.invalidPrediction(
-                "Foundation Models must return one finite probability per option, summing to 1"
-            )
+        guard probabilities.count == prompt.options.count else {
+            throw DecisionError.invalidPrediction("Foundation Models probability count must match the option count")
+        }
+        guard probabilities.allSatisfy({ $0.isFinite && (0 ... 1).contains($0) }) else {
+            throw DecisionError.invalidPrediction("Foundation Models probabilities must be finite values in 0...1")
+        }
+        guard abs(probabilities.reduce(0, +) - 1) <= 0.01 else {
+            throw DecisionError.invalidPrediction("Foundation Models probabilities must sum to 1")
         }
         return DecisionPrediction(
             probabilities: probabilities,

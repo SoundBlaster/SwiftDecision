@@ -202,6 +202,58 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
         }
     }
 
+    func testDiverseOutputContractCorpusWithAnOfflineClient() async throws {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        for sample in try DecisionOutputContractCase.load() {
+            let count = sample.options.count
+            let values = Array(repeating: 1 / Double(count), count: count)
+            let client = FixtureFoundationModelsClient(responses: [distribution(values)])
+            let engine = DecisionEngine(backend: FoundationModelsDecisionBackend(client: client))
+
+            let probabilities = try await sample.probabilities(using: engine)
+            XCTAssertEqual(probabilities, values, sample.id)
+            let requests = await client.requests
+            XCTAssertEqual(requests.count, 1, sample.id)
+            let request = try XCTUnwrap(requests.first)
+            let payload = try JSONDecoder().decode(Payload.self, from: Data(request.prompt.utf8))
+            XCTAssertEqual(payload.context, sample.context, sample.id)
+            XCTAssertEqual(payload.instructions, sample.instructions, sample.id)
+            XCTAssertEqual(payload.options.map(\.id), sample.options.map(\.id), sample.id)
+            let schema = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request.schema))
+            XCTAssertTrue(contains(key: "minItems", number: count, in: schema), sample.id)
+            XCTAssertTrue(contains(key: "maxItems", number: count, in: schema), sample.id)
+        }
+    }
+
+    func testLiveDiverseOutputContractsWhenExplicitlyEnabled() async throws {
+        guard ProcessInfo.processInfo.environment["SWIFTDECISION_FOUNDATION_MODELS_CONTRACT"] == "1" else {
+            throw XCTSkip("Set SWIFTDECISION_FOUNDATION_MODELS_CONTRACT=1 to run the diverse local output-contract corpus")
+        }
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        let cases = try DecisionOutputContractCase.load()
+        let backend = FoundationModelsDecisionBackend(generationOptions: .init(samplingMode: .greedy, maximumResponseTokens: 768))
+        let engine = DecisionEngine(backend: backend, configuration: .init(timeout: 15))
+        let budget = try DecisionBudget(timeout: 180)
+        for sample in cases {
+            guard budget.remainingTime > 0 else {
+                return XCTFail("Shared live-contract budget expired before case \(sample.id)")
+            }
+            do {
+                let probabilities = try await sample.probabilities(using: engine, budget: budget)
+                XCTAssertEqual(probabilities.count, sample.options.count, sample.id)
+                XCTAssertTrue(probabilities.allSatisfy { $0.isFinite && (0 ... 1).contains($0) }, sample.id)
+                XCTAssertEqual(probabilities.reduce(0, +), 1, accuracy: 0.01, sample.id)
+                print("Output contract \(sample.id): valid, \(probabilities.count) probabilities")
+            } catch let error as DecisionError {
+                // Engine errors contain adapter-owned contract diagnostics, without generated text.
+                XCTFail("Output contract \(sample.id): \(error)")
+            } catch {
+                // Native errors may contain input/output text; report only their type.
+                XCTFail("Output contract \(sample.id): generation failed (\(type(of: error)))")
+            }
+        }
+    }
+
     @available(iOS 26, macOS 26, visionOS 26, *)
     private func distribution(_ values: [Double]) -> GeneratedContent {
         GeneratedContent(properties: ["probabilities": values])

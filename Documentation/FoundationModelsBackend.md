@@ -121,6 +121,29 @@ swift test --traits FoundationModels \
 This validates the distribution contract for Noul, Choice, and Score, not model accuracy. It fails
 if inference is explicitly enabled but the model is unavailable.
 
+For broader format coverage, the test resource contains 48 requests adapted from existing
+Jev4Mellea, SwiftJev, Oracle, CityChain, and adapter examples. It includes different topics,
+English/Russian, Unicode, escaped JSON, multiline and longer contexts, and a quoted request to
+ignore the schema. Choice and Score each cover 2, 3, 5, 10, and 20 options. There are no expected
+winning labels or answer-quality assertions. All cases also run with an offline fixture client.
+
+```sh
+SWIFTDECISION_FOUNDATION_MODELS_CONTRACT=1 \
+swift test --traits FoundationModels \
+  --filter FoundationModelsDecisionBackendTests/testLiveDiverseOutputContractsWhenExplicitlyEnabled
+```
+
+This separate opt-in test sends every case through the public typed engine APIs and the local
+Foundation Models backend. It checks the output contract, with a 15-second per-call timeout and
+a shared 180-second inference budget. A failure to generate output is reported separately from
+an invalid probability distribution, without logging input or output content. See the
+[corpus sources and adaptations](../Tests/SwiftDecisionTests/Fixtures/README.md).
+
+The [2026-10-24 local run](Reports/FoundationModelsOutputContracts-2026-10-24.md) returned valid
+distributions for 44 of 48 cases. All arrays had the requested cardinality and bounded finite
+numbers; four larger-option cases failed the sum constraint. The opt-in live suite exposes
+these failures, while offline CI remains independent of model inference.
+
 Apple references: [guided generation](https://developer.apple.com/documentation/foundationmodels/generating-swift-data-structures-with-guided-generation),
 [dynamic schemas](https://developer.apple.com/documentation/foundationmodels/dynamicgenerationschema),
 and [model availability](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel/availability).

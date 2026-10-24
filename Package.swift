@@ -57,6 +57,8 @@ let package = Package(
                 "SwiftDecision",
                 .product(name: "SpecificationCore", package: "SpecificationCore"),
             ],
+            exclude: ["Fixtures/README.md"],
+            resources: [.copy("Fixtures/DecisionOutputContracts.jsonl")],
             swiftSettings: [
                 .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
                 .define("SWIFTDECISION_FOUNDATION_MODELS", .when(platforms: [.iOS, .macOS, .visionOS], traits: ["FoundationModels"])),

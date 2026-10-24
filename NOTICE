@@ -15,3 +15,8 @@ and neural-network structure are independently implemented in Swift/MLX in
 accordance with the Apache-2.0 license. Model weights are provided separately
 by Convai Innovations and are not included in this repository. Consult the
 checkpoint model card for applicable weight terms.
+
+The synthetic decision output-contract fixtures adapt examples from Jev4Mellea
+and SwiftJev (Apache-2.0), and SwiftDecision-Examples (MIT, Copyright (c) 2026
+Egor Merkushev). Source revisions, adaptations, and the MIT permission notice are
+documented in Tests/SwiftDecisionTests/Fixtures/README.md.
