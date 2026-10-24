@@ -123,7 +123,9 @@ confidence. Evaluate accuracy, latency, abstention, and threshold behavior on re
 application data before choosing production policies. A valid schema does not establish a
 correct decision.
 
-Each request creates a `DynamicGenerationSchema` with exactly one numeric entry per option,
+### Original array contract (`directDistribution`)
+
+In this compatibility strategy each request creates a `DynamicGenerationSchema` with exactly one numeric entry per option,
 bounded to `0...1`. A dynamic schema accommodates the runtime option count without a fixed
 `@Generable` type. The initializer's `normalization:` option selects the generation contract:
 
