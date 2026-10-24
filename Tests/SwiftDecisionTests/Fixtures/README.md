@@ -72,3 +72,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Decision-quality evaluation (opt-in)
+
+`FoundationModelsDecisionQuality.jsonl` contains 24 hand-authored development cases.
+`FoundationModelsDecisionHoldout.jsonl` contains 12 additional cases frozen after
+prompt selection, plus 8 Oracle regressions with the question repeated as context.
+They cover English/Russian Noul, Choice and Score, different answer positions,
+missing/conflicting evidence, and absent choice criteria. These are new synthetic
+fixtures authored for this repository, not user data or a calibrated benchmark.
+
+Live evaluation uses batches of at most six samples and is explicitly enabled with
+`SWIFTDECISION_FM_QUALITY=1`. Select the holdout with
+`SWIFTDECISION_FM_QUALITY_CORPUS=holdout` and batches 0 through 3 with
+`SWIFTDECISION_FM_QUALITY_BATCH`. The optional `directDistribution` strategy is a
+baseline observer; option assessment additionally asserts no accepted wrong result
+or format failure. Known-answer abstentions are reported as coverage loss, not
+silently counted as correct.

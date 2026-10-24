@@ -57,6 +57,64 @@ checks availability on each inference and throws `FoundationModelsDecisionError.
 The reason distinguishes unsupported hardware, Apple Intelligence disabled, and model not ready.
 Availability can change after that check; Foundation Models generation errors must also be handled.
 
+## Evaluate options with an order consistency check
+
+The new opt-in strategy addresses the repeated first-option / 67:33 template seen
+with a numeric array in Oracle:
+
+```swift
+let backend = FoundationModelsDecisionBackend(
+    normalization: .sumToOne,
+    strategy: .optionAssessment
+)
+let engine = DecisionEngine(backend: backend, configuration: .init(timeout: 10))
+```
+
+It gives each option a named numeric field whose schema description includes that
+option's meaning, with a short, conversational task/context prompt. It generates
+two assessments in fresh sessions: the supplied order and a cyclic shift that moves every option.
+Both complete outputs are validated and normalized using the explicit setting.
+The second vector is mapped back to the original option order.
+
+Noul has a dedicated truth schema: `verdict` (`supported`, `contradicted`, or
+`unknown`) plus the native model's `probabilityTrue`. The second pass cyclically shifts
+the categorical guide order so no verdict keeps its previous position. Missing/conflicting evidence and a verdict that
+contradicts the numeric estimate yield no preference; bounded scalar estimates
+are represented as `[1 - probabilityTrue, probabilityTrue]`. This complement is
+intrinsically normalized and needs no sum correction.
+
+Score additionally requests `hasEvidence`. An explicit false status maps valid,
+bounded option assessments to an uninformative distribution, including when the
+model supports no level at all. This is a semantic no-evidence outcome in the new
+strategy; a zero-sum vector without that explicit status still throws. Missing
+fields or malformed numbers always throw.
+
+If both passes have the same unique maximum, their aligned distributions are
+averaged. A disagreement or tied maximum yields a uniform distribution to signal
+**no stable preference**. The default engine policy abstains on that distribution;
+a caller that deliberately accepts uniform distributions can still obtain a
+value. Malformed, missing, nonfinite, out-of-range, zero-sum or strict-mode
+unnormalized output remains an error; consistency checking never repairs it.
+
+This costs two sequential model generations per backend prediction. Automatic
+application routing followed by an answer can require four generations, so keep
+one shared `DecisionBudget` across the operation. Cancellation is checked between
+passes. No second pass starts after cancellation is observed. There is no retry
+or remote fallback; underlying OS work remains cooperatively cancellable.
+
+The default `.directDistribution` strategy preserves the original one-array
+contract and existing injected clients. `.optionAssessment` clients must instead
+return `option_0`, `option_1`, etc., in each Choice/Score request's current order,
+plus `hasEvidence` for Score, or the Noul fields described above. Do not assume
+that the second request preserves the first request's order. Its prompt is text,
+not the direct strategy's JSON payload. Option descriptions appear in the schema;
+untrusted context and alternatives still need application-level handling.
+
+Consistency is not factual verification. Two passes can agree on a wrong answer,
+and these remain model estimates, not calibrated confidence. This strategy must
+be evaluated on each consuming workload. The experiment report records the tested
+scope and observed failures.
+
 ## What the probabilities mean
 
 Guided generation produces a structured value. The adapter asks the model to **estimate** one
