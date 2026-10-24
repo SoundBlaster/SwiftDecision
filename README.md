@@ -157,6 +157,8 @@ OpenAI's Decisions API is available through the optional `SwiftDecisionOpenAI` p
 
 The non-default `FoundationModels` trait enables `FoundationModelsDecisionBackend` in the existing `SwiftDecision` product. It uses on-device guided generation for Noul, Choice, and Score on iOS 26+, macOS 26+, and visionOS 26+, when Apple Intelligence and its model are available. Core package deployment targets stay unchanged. Generated probabilities are model-reported estimates, not calibrated confidence or token probabilities. There is no automatic network fallback.
 
+Strict sum validation is the default. Explicitly select `FoundationModelsDecisionBackend(normalization: .sumToOne)` to generate bounded relative weights and normalize them in the adapter; malformed values and zero-sum weights remain errors.
+
 This adapter is unreleased. See [Foundation Models](Documentation/FoundationModelsBackend.md) for trait configuration, typed decisions, availability handling, offline tests, and opt-in local checks: a three-request smoke test and a diverse 48-case output-contract corpus.
 
 ### Native Laya with MLX

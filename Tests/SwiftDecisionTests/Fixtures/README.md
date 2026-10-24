@@ -43,6 +43,12 @@ budget. It makes no hosted requests. Native generation errors, including refusal
 language errors, are reported as failures to obtain output, rather than counted as valid arrays.
 Only case identifiers and contract status are printed; input text and generated content are omitted.
 
+The live command defaults to strict `.none` mode. Add
+`SWIFTDECISION_FOUNDATION_MODELS_NORMALIZATION=sumToOne` to run the same corpus with the backend's
+explicit normalization option: the model generates bounded `weights`, and the adapter divides
+them by their positive sum. Offline tests cover all cases in both modes. A zero-sum vector,
+negative/out-of-range or nonfinite values, and malformed arrays remain errors.
+
 ## SwiftDecision-Examples license notice
 
 MIT License

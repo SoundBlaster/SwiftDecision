@@ -65,11 +65,31 @@ confidence. Evaluate accuracy, latency, abstention, and threshold behavior on re
 application data before choosing production policies. A valid schema does not establish a
 correct decision.
 
-Each request creates a `DynamicGenerationSchema`: its `probabilities` array has exactly the
-option count, and each entry is bounded to `0...1`. A dynamic schema accommodates the runtime
-option count without a fixed `@Generable` type. After generation, the adapter checks count,
-finite values, bounds, and sum within `0.01` of 1. It rejects invalid distributions without
-silently normalizing them or substituting a one-hot vector.
+Each request creates a `DynamicGenerationSchema` with exactly one numeric entry per option,
+bounded to `0...1`. A dynamic schema accommodates the runtime option count without a fixed
+`@Generable` type. The initializer's `normalization:` option selects the generation contract:
+
+| Option | Generated field | Transformation |
+| --- | --- | --- |
+| `.none` (default) | `probabilities` | Requires sum within `0.01` of 1 and returns values unchanged. |
+| `.sumToOne` | `weights` | Requires a positive sum, then returns `weight / sum(weights)` per option. |
+
+```swift
+// Strict behavior is the default and can also be selected explicitly.
+let strict = FoundationModelsDecisionBackend(normalization: .none)
+let normalized = FoundationModelsDecisionBackend(normalization: .sumToOne)
+```
+
+Both modes reject missing/malformed arrays, wrong cardinality, nonfinite numbers, negative
+values, and values greater than 1. The normalized mode also rejects an all-zero vector; it never
+substitutes a uniform distribution or fabricated confidence. Normalization preserves option order,
+relative proportions, and zero weights, subject to floating-point precision. It does not accept
+malformed data or convert a thrown generation error into a prediction. Public `DecisionPrediction`
+continues to carry `probabilities` in both modes.
+
+Normalized-mode instructions ask the model to give its best-fitting option weight 1 and express
+the others relative to it. The adapter accepts any bounded weights with a positive sum; an all-zero
+model result still fails validation.
 
 Noul uses `[false, true]`; Choice preserves option order; Score uses rubric IDs `0`, `1`, and so on.
 The adapter renders kind, instructions, context, and ordered options as JSON to preserve quotes,
@@ -102,7 +122,10 @@ native error details. Adapter-owned invalid-prediction errors omit generated con
 `FoundationModelsDecisionClient` is an injectable, Sendable boundary. Requests expose fixed
 instructions, rendered input, and schema; responses are `GeneratedContent`. Implementations must
 provide independent request sessions and cooperate with cancellation. Inject a fixture using
-`FoundationModelsDecisionBackend(client:)`. CI uses fixtures, without enabling Apple Intelligence.
+`FoundationModelsDecisionBackend(client:normalization:)`. Clients must return `probabilities`
+in `.none` mode or `weights` in `.sumToOne` mode; the request's schema and instructions specify
+the selected contract. Existing `client:` calls retain strict mode. CI uses fixtures, without
+enabling Apple Intelligence, and exercises the corpus in both modes.
 
 ```sh
 swift test --traits FoundationModels
@@ -133,16 +156,29 @@ swift test --traits FoundationModels \
   --filter FoundationModelsDecisionBackendTests/testLiveDiverseOutputContractsWhenExplicitlyEnabled
 ```
 
+To run the same 48 cases with explicit normalization:
+
+```sh
+SWIFTDECISION_FOUNDATION_MODELS_CONTRACT=1 \
+SWIFTDECISION_FOUNDATION_MODELS_NORMALIZATION=sumToOne \
+swift test --traits FoundationModels \
+  --filter FoundationModelsDecisionBackendTests/testLiveDiverseOutputContractsWhenExplicitlyEnabled
+```
+
+Omitting the normalization environment variable selects `none`; an unknown value fails the test
+configuration rather than silently selecting another mode.
+
 This separate opt-in test sends every case through the public typed engine APIs and the local
 Foundation Models backend. It checks the output contract, with a 15-second per-call timeout and
 a shared 180-second inference budget. A failure to generate output is reported separately from
 an invalid probability distribution, without logging input or output content. See the
 [corpus sources and adaptations](../Tests/SwiftDecisionTests/Fixtures/README.md).
 
-The [2026-10-24 local run](Reports/FoundationModelsOutputContracts-2026-10-24.md) returned valid
+The [2026-10-24 strict-mode local run](Reports/FoundationModelsOutputContracts-2026-10-24.md) returned valid
 distributions for 44 of 48 cases. All arrays had the requested cardinality and bounded finite
 numbers; four larger-option cases failed the sum constraint. The opt-in live suite exposes
-these failures, while offline CI remains independent of model inference.
+these failures. The follow-up with explicit `.sumToOne` and relative-weight instructions passed
+all 48 cases. Offline CI remains independent of model inference and covers both modes.
 
 Apple references: [guided generation](https://developer.apple.com/documentation/foundationmodels/generating-swift-data-structures-with-guided-generation),
 [dynamic schemas](https://developer.apple.com/documentation/foundationmodels/dynamicgenerationschema),

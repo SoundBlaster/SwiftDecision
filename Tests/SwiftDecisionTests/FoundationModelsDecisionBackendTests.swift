@@ -118,6 +118,92 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
         XCTAssertTrue(requests.isEmpty)
     }
 
+    func testNormalizationIsOptInAndStrictValuesArePreserved() async throws {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        for backend in [
+            FoundationModelsDecisionBackend(client: FixtureFoundationModelsClient(responses: [distribution([0.2, 0.6])])),
+            FoundationModelsDecisionBackend(client: FixtureFoundationModelsClient(responses: [distribution([0.2, 0.6])]), normalization: .none)
+        ] {
+            do {
+                _ = try await backend.predict(for: choicePrompt())
+                XCTFail("Normalization must require explicit opt-in")
+            } catch let error as DecisionError {
+                guard case .invalidPrediction = error else { return XCTFail("Unexpected error: \(error)") }
+            }
+        }
+        let strict = FoundationModelsDecisionBackend(client: FixtureFoundationModelsClient(responses: [distribution([0.2, 0.795])]))
+        let strictResult = try await strict.predict(for: choicePrompt())
+        XCTAssertEqual(strictResult.probabilities, [0.2, 0.795])
+
+        let normalized = FoundationModelsDecisionBackend(
+            client: FixtureFoundationModelsClient(responses: [weights([0.2, 0.6])]), normalization: .sumToOne
+        )
+        let normalizedResult = try await normalized.predict(for: choicePrompt())
+        XCTAssertEqual(normalizedResult.probabilities[0], 0.25, accuracy: 1e-12)
+        XCTAssertEqual(normalizedResult.probabilities[1], 0.75, accuracy: 1e-12)
+    }
+
+    func testNormalizationPreservesOrderZerosAndVerySmallPositiveWeights() async throws {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        let cases: [([Double], [Double])] = [
+            ([0, 0.2, 0.6], [0, 0.25, 0.75]),
+            ([0.4, 0], [1, 0]),
+            ([Double.leastNonzeroMagnitude, Double.leastNonzeroMagnitude], [0.5, 0.5]),
+            ([1e-300, 3e-300], [0.25, 0.75])
+        ]
+        for (values, expected) in cases {
+            let backend = FoundationModelsDecisionBackend(
+                client: FixtureFoundationModelsClient(responses: [weights(values)]), normalization: .sumToOne
+            )
+            let result = try await backend.predict(for: choicePrompt(ids: values.indices.map(String.init)))
+            for (actual, expectedValue) in zip(result.probabilities, expected) {
+                XCTAssertEqual(actual, expectedValue, accuracy: 1e-12)
+            }
+            XCTAssertEqual(result.probabilities.reduce(0, +), 1, accuracy: 1e-12)
+        }
+    }
+
+    func testNormalizationRejectsZeroSumNonfiniteBoundsAndMalformedWeights() async throws {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        let responses = [
+            weights([0, 0]), weights([]), weights([0.5]), weights([0.2, 0.3, 0.5]),
+            weights([-0.1, 0.6]), weights([0.1, 1.1]),
+            weights([.nan, 0.6]), weights([.infinity, 0.6]), weights([-.infinity, 0.6]),
+            distribution([0.2, 0.8]),
+            try GeneratedContent(json: "{\"weights\":\"private-response-text\"}")
+        ]
+        for response in responses {
+            let backend = FoundationModelsDecisionBackend(
+                client: FixtureFoundationModelsClient(responses: [response]), normalization: .sumToOne
+            )
+            do {
+                _ = try await backend.predict(for: choicePrompt())
+                XCTFail("Invalid weights must not be replaced with a valid distribution")
+            } catch let error as DecisionError {
+                guard case .invalidPrediction = error else { return XCTFail("Unexpected error: \(error)") }
+                XCTAssertFalse(error.description.contains("private-response-text"))
+            }
+        }
+    }
+
+    func testNormalizedModeRequestsWeightsAndRetainsEnginePolicy() async throws {
+        guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
+        let client = FixtureFoundationModelsClient(responses: [weights([0.4, 0.4]), weights([0.4, 0.4])])
+        let engine = DecisionEngine(backend: FoundationModelsDecisionBackend(client: client, normalization: .sumToOne))
+        let abstained = try await engine.noul(statement: "Is it urgent?", context: "Unclear")
+        let fallback = try await engine.noul(statement: "Is it urgent?", context: "Unclear", fallback: false)
+        guard case .abstained = abstained.outcome else { return XCTFail("Normalized uncertainty must still abstain") }
+        guard case .fallback(false, _) = fallback.outcome else { return XCTFail("The engine must retain fallback policy") }
+        XCTAssertEqual(abstained.probabilities, [0.5, 0.5])
+
+        let requests = await client.requests
+        let request = try XCTUnwrap(requests.first)
+        let schema = String(decoding: try JSONEncoder().encode(request.schema), as: UTF8.self)
+        XCTAssertTrue(schema.contains("\"weights\""))
+        XCTAssertFalse(schema.contains("\"probabilities\""))
+        XCTAssertTrue(request.instructions.contains("Their sum need not be 1"))
+    }
+
     func testUncertaintyUsesEngineAbstentionAndFallback() async throws {
         guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
         let client = FixtureFoundationModelsClient(responses: [distribution([0.5, 0.5]), distribution([0.5, 0.5])])
@@ -204,24 +290,32 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
 
     func testDiverseOutputContractCorpusWithAnOfflineClient() async throws {
         guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
-        for sample in try DecisionOutputContractCase.load() {
-            let count = sample.options.count
-            let values = Array(repeating: 1 / Double(count), count: count)
-            let client = FixtureFoundationModelsClient(responses: [distribution(values)])
-            let engine = DecisionEngine(backend: FoundationModelsDecisionBackend(client: client))
+        for normalization in [FoundationModelsDecisionBackend.Normalization.none, .sumToOne] {
+            for sample in try DecisionOutputContractCase.load() {
+                let count = sample.options.count
+                let values = Array(repeating: 1 / Double(count), count: count)
+                let response = normalization == .none
+                    ? distribution(values)
+                    : weights(Array(repeating: 0.5, count: count))
+                let client = FixtureFoundationModelsClient(responses: [response])
+                let engine = DecisionEngine(backend: FoundationModelsDecisionBackend(client: client, normalization: normalization))
 
-            let probabilities = try await sample.probabilities(using: engine)
-            XCTAssertEqual(probabilities, values, sample.id)
-            let requests = await client.requests
-            XCTAssertEqual(requests.count, 1, sample.id)
-            let request = try XCTUnwrap(requests.first)
-            let payload = try JSONDecoder().decode(Payload.self, from: Data(request.prompt.utf8))
-            XCTAssertEqual(payload.context, sample.context, sample.id)
-            XCTAssertEqual(payload.instructions, sample.instructions, sample.id)
-            XCTAssertEqual(payload.options.map(\.id), sample.options.map(\.id), sample.id)
-            let schema = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request.schema))
-            XCTAssertTrue(contains(key: "minItems", number: count, in: schema), sample.id)
-            XCTAssertTrue(contains(key: "maxItems", number: count, in: schema), sample.id)
+                let probabilities = try await sample.probabilities(using: engine)
+                for (actual, expected) in zip(probabilities, values) {
+                    XCTAssertEqual(actual, expected, accuracy: 1e-12, sample.id)
+                }
+                XCTAssertEqual(probabilities.count, count, sample.id)
+                let requests = await client.requests
+                XCTAssertEqual(requests.count, 1, sample.id)
+                let request = try XCTUnwrap(requests.first)
+                let payload = try JSONDecoder().decode(Payload.self, from: Data(request.prompt.utf8))
+                XCTAssertEqual(payload.context, sample.context, sample.id)
+                XCTAssertEqual(payload.instructions, sample.instructions, sample.id)
+                XCTAssertEqual(payload.options.map(\.id), sample.options.map(\.id), sample.id)
+                let schema = try JSONSerialization.jsonObject(with: JSONEncoder().encode(request.schema))
+                XCTAssertTrue(contains(key: "minItems", number: count, in: schema), sample.id)
+                XCTAssertTrue(contains(key: "maxItems", number: count, in: schema), sample.id)
+            }
         }
     }
 
@@ -231,7 +325,15 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
         }
         guard #available(iOS 26, macOS 26, visionOS 26, *) else { throw XCTSkip("Requires Foundation Models") }
         let cases = try DecisionOutputContractCase.load()
-        let backend = FoundationModelsDecisionBackend(generationOptions: .init(samplingMode: .greedy, maximumResponseTokens: 768))
+        let normalization: FoundationModelsDecisionBackend.Normalization
+        switch ProcessInfo.processInfo.environment["SWIFTDECISION_FOUNDATION_MODELS_NORMALIZATION"] ?? "none" {
+        case "none": normalization = .none
+        case "sumToOne": normalization = .sumToOne
+        default: return XCTFail("SWIFTDECISION_FOUNDATION_MODELS_NORMALIZATION must be none or sumToOne")
+        }
+        let backend = FoundationModelsDecisionBackend(
+            generationOptions: .init(samplingMode: .greedy, maximumResponseTokens: 768), normalization: normalization
+        )
         let engine = DecisionEngine(backend: backend, configuration: .init(timeout: 15))
         let budget = try DecisionBudget(timeout: 180)
         for sample in cases {
@@ -243,7 +345,7 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
                 XCTAssertEqual(probabilities.count, sample.options.count, sample.id)
                 XCTAssertTrue(probabilities.allSatisfy { $0.isFinite && (0 ... 1).contains($0) }, sample.id)
                 XCTAssertEqual(probabilities.reduce(0, +), 1, accuracy: 0.01, sample.id)
-                print("Output contract \(sample.id): valid, \(probabilities.count) probabilities")
+                print("Output contract \(sample.id) [\(normalization)]: valid, \(probabilities.count) probabilities")
             } catch let error as DecisionError {
                 // Engine errors contain adapter-owned contract diagnostics, without generated text.
                 XCTFail("Output contract \(sample.id): \(error)")
@@ -257,6 +359,11 @@ final class FoundationModelsDecisionBackendTests: XCTestCase {
     @available(iOS 26, macOS 26, visionOS 26, *)
     private func distribution(_ values: [Double]) -> GeneratedContent {
         GeneratedContent(properties: ["probabilities": values])
+    }
+
+    @available(iOS 26, macOS 26, visionOS 26, *)
+    private func weights(_ values: [Double]) -> GeneratedContent {
+        GeneratedContent(properties: ["weights": values])
     }
 
     private func choicePrompt(ids: [String] = ["a", "b"]) -> DecisionPrompt {

@@ -58,7 +58,41 @@ The live test intentionally fails for observed invalid distributions. It is opt-
 part of the offline CI inference path. The offline suite still runs all 48 inputs through
 an injected client and checks rendering, schema cardinality, and public engine integration.
 
-The next adapter change should address the cross-element sum constraint explicitly. Guided
-generation enforces array structure and individual numeric bounds in this run, but asking the
-model for normalized probabilities did not reliably enforce their sum with larger option sets.
-The current adapter retains strict rejection rather than weakening that constraint to pass a test.
+This baseline identified the cross-element sum constraint: guided generation enforced array
+structure and individual numeric bounds in these runs, but asking for normalized probabilities
+did not reliably enforce their sum with larger option sets. Strict mode retains that rejection.
+
+## Follow-up: explicit normalization
+
+`FoundationModelsDecisionBackend(normalization: .sumToOne)` requests bounded relative `weights`
+and divides them by their positive sum. The default remains `.none`, with the original strict
+`probabilities` contract. Both modes reject wrong-length/malformed arrays and nonfinite or
+out-of-range values. The normalization option also rejects zero-sum vectors, rather than
+inventing a replacement distribution.
+
+An initial normalized-mode run returned valid predictions for 47 of 48 cases in 34.942 seconds.
+`support-twenty-options` generated all-zero weights and was correctly rejected. The normalized
+mode's instructions were then made concrete: assign the best-fitting option weight 1 and express
+the other weights relative to it. The adapter's zero-sum rejection was retained.
+
+With those instructions, the same 48 cases returned valid predictions in 40.582 seconds:
+
+| Kind | Cases | Valid normalized distributions |
+| --- | ---: | ---: |
+| Noul | 31 | 31 |
+| Choice | 10 | 10 |
+| Score | 7 | 7 |
+| Total | 48 | 48 |
+
+```sh
+SWIFTDECISION_FOUNDATION_MODELS_CONTRACT=1 \
+SWIFTDECISION_FOUNDATION_MODELS_NORMALIZATION=sumToOne \
+swift test --traits FoundationModels \
+  --filter FoundationModelsDecisionBackendTests/testLiveDiverseOutputContractsWhenExplicitlyEnabled
+```
+
+This is a separate generation contract, so the normalized run is not a replay of strict-mode
+raw outputs. It verifies the public output format on this device/corpus, without assessing answer
+quality, calibration, or guaranteeing that arbitrary future requests cannot produce invalid weights.
+Offline tests cover both modes, including non-unit sums, zeros, very small positive weights,
+NaN/infinities, bounds, field mismatches, and unchanged strict-mode behavior.
