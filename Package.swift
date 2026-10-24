@@ -17,6 +17,7 @@ let package = Package(
     ],
     traits: [
         .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend."),
+        .trait(name: "FoundationModels", description: "Enable on-device Apple Intelligence decisions with guided generation."),
     ],
     dependencies: [
         .package(
@@ -38,6 +39,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
+                .define("SWIFTDECISION_FOUNDATION_MODELS", .when(platforms: [.iOS, .macOS, .visionOS], traits: ["FoundationModels"])),
             ]
         ),
         .target(
@@ -57,6 +59,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .define("SWIFTDECISION_MLX", .when(platforms: [.iOS, .macOS], traits: ["MLX"])),
+                .define("SWIFTDECISION_FOUNDATION_MODELS", .when(platforms: [.iOS, .macOS, .visionOS], traits: ["FoundationModels"])),
             ]
         ),
         .testTarget(

@@ -57,3 +57,20 @@ jobs:
         run: swift build --traits MLX --triple arm64-apple-macosx14.0
       - name: Test with native MLX trait
         run: swift test --traits MLX --triple arm64-apple-macosx14.0
+
+  foundation-models:
+    name: Swift 6.4 Foundation Models trait (offline contracts)
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require Swift 6.4
+        run: |
+          swift_version="$(swift --version)"
+          printf '%s\n' "$swift_version"
+          [[ "$swift_version" == *"Swift version 6.4"* ]]
+      - name: Build with Foundation Models trait
+        run: swift build --traits FoundationModels
+      - name: Build iOS Simulator adapter (iOS 26+)
+        run: swift build --target SwiftDecision --triple arm64-apple-ios26.0-simulator --traits FoundationModels
+      - name: Run offline tests with Foundation Models trait
+        run: swift test --traits FoundationModels

@@ -11,7 +11,7 @@
 
 SwiftDecision gives applications a small, composable decision layer for AI-powered classification, routing, yes/no checks, and rubric scoring. Ask a model to choose from your options; get a typed value with its probabilities, confidence, and an explicit outcome. If a result does not meet your policy, SwiftDecision can abstain or return your chosen fallback.
 
-Use hosted providers such as [SwiftJev](https://github.com/SoundBlaster/SwiftJev), run the English Laya model locally with native Apple MLX, or provide your own backend. [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) powers request and output validation, ordered policy routing, and decision composition inside the package.
+Use hosted providers such as [SwiftJev](https://github.com/SoundBlaster/SwiftJev), run on-device Apple Intelligence with the optional `FoundationModels` trait, run the English Laya model locally with native Apple MLX, or provide your own backend. [SpecificationCore](https://github.com/SoundBlaster/SpecificationCore) powers request and output validation, ordered policy routing, and decision composition inside the package.
 
 **Models propose. Your application keeps control of policy and action.**
 
@@ -19,7 +19,7 @@ Use hosted providers such as [SwiftJev](https://github.com/SoundBlaster/SwiftJev
 
 - **Use model decisions as Swift values.** `choice` preserves your typed labels; `noul` returns `Bool`; `score` returns a selected rubric level and an expected numeric value.
 - **Handle uncertainty explicitly.** Configure acceptance thresholds and choose between an accepted result, abstention for review, or an application-defined fallback.
-- **Keep backends replaceable.** Use Jev, local Laya with the optional `MLX` trait, or any type that conforms to `DecisionBackend`.
+- **Keep backends replaceable.** Use Jev, on-device Apple Intelligence with the `FoundationModels` trait, local Laya with the `MLX` trait, or any type that conforms to `DecisionBackend`.
 - **Compose with SpecificationCore.** Async specifications validate inputs and predictions, select policies in order, and wrap backend evaluation.
 - **Own operational behavior.** SwiftDecision checks cancellation, supports inference timeouts, and can emit content-free traces and metrics.
 
@@ -153,6 +153,12 @@ TypeSafe Jev is available as the separate [`SwiftJev`](https://github.com/SoundB
 
 OpenAI's Decisions API is available through the optional `SwiftDecisionOpenAI` product in this package. It uses the native `/v1/decisions` REST API without adding an OpenAI SDK or network dependency to the core `SwiftDecision` product. See [OpenAI Decisions](Documentation/OpenAIDecisionsBackend.md) for setup and the current text-only mapping.
 
+### Apple Intelligence with Foundation Models
+
+The non-default `FoundationModels` trait enables `FoundationModelsDecisionBackend` in the existing `SwiftDecision` product. It uses on-device guided generation for Noul, Choice, and Score on iOS 26+, macOS 26+, and visionOS 26+, when Apple Intelligence and its model are available. Core package deployment targets stay unchanged. Generated probabilities are model-reported estimates, not calibrated confidence or token probabilities. There is no automatic network fallback.
+
+This adapter is unreleased. See [Foundation Models](Documentation/FoundationModelsBackend.md) for trait configuration, typed decisions, availability handling, offline tests, and the opt-in local smoke test.
+
 ### Native Laya with MLX
 
 The non-default `MLX` SwiftPM Trait enables `LayaMLXBackend`, which runs the English `aac6fef/laya-mlx` checkpoint published by Convai Innovations locally with MLX. It does not invoke Python or download model weights at runtime. Provide a local checkpoint directory. The backend requires Apple Silicon, macOS 14+ or iOS 17+, and SwiftPM 6.3+. SwiftPM can still resolve or fetch optional packages during dependency resolution when the trait is disabled; the trait controls whether the MLX API and products are enabled for the target.
@@ -250,11 +256,12 @@ An optional `DecisionMetricsHandler` receives one measurement per completed or f
 
 ## Benchmarks
 
-The current model-backed inference backend included in this package is native Laya MLX. Hosted providers such as TypeSafe Jev are maintained as separate provider packages. The mock backend is for examples and contract tests, not a model benchmark.
+On-device backends include Foundation Models guided generation and native Laya MLX. Hosted providers such as TypeSafe Jev are maintained as separate provider packages. The mock backend is for examples and contract tests, not a model benchmark.
 
 | Backend | Example workload | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
 | Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Optional local Python parity test in FP16 and FP32 | Not measured | Not measured |
+| Foundation Models | Refund request (Noul), team routing (Choice), response quality (Score) | Offline contracts and an opt-in on-device smoke test; model accuracy not measured | Not measured | Not measured |
 | `ClosureDecisionBackend` | Deterministic Noul, Choice, Score fixtures | Request/response contracts covered in CI | Not applicable | Not applicable |
 
 ## Requirements and validation
@@ -262,6 +269,7 @@ The current model-backed inference backend included in this package is native La
 - Swift tools 6.3 or newer.
 - Base package deployment targets: macOS 10.15, iOS 15, tvOS 13, and watchOS 6.
 - Native MLX backend: Apple Silicon, macOS 14+ or iOS 17+, and the `MLX` trait.
+- Foundation Models backend: iOS 26+, macOS 26+, or visionOS 26+, an available Apple Intelligence model, and the `FoundationModels` trait.
 
 Build and test without optional traits:
 
@@ -270,7 +278,7 @@ swift build --disable-default-traits
 swift test --disable-default-traits
 ```
 
-CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights.
+CI builds and tests on Swift 6.3.3 and Swift 6.4. The MLX CI lane compiles and tests the native backend on Apple Silicon without downloading model weights. The Foundation Models lane builds the iOS 26 Simulator adapter and runs offline contract tests without real inference.
 
 ## Platform compatibility
 

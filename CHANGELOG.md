@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add the non-default `FoundationModels` trait and an on-device guided-generation backend for Noul, Choice, and Score, with injectable offline clients and an opt-in live smoke test. Generated probabilities are self-reported estimates, not calibrated confidence.
 - Add injectable `DecisionClock` time and cancellable waiting for inference budgets and timeouts, with a system-uptime default that preserves deployment targets.
 - Add provider-neutral `APIEndpoint` configuration for provider defaults, API roots, and complete operation URLs.
 - Let the OpenAI Decisions adapter append `/decisions` to API roots or use a complete operation URL unchanged. Custom endpoints require an explicit API key.
