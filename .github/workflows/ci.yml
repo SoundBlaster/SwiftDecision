@@ -57,3 +57,17 @@ jobs:
         run: swift build --traits MLX --triple arm64-apple-macosx14.0
       - name: Test with native MLX trait
         run: swift test --traits MLX --triple arm64-apple-macosx14.0
+
+  gliner:
+    name: GLiNER Core ML adapter (no model download)
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test optional adapter
+        run: swift test --traits GLiNER --triple arm64-apple-macosx14.0
+      - name: Build adapter for iOS 17 Simulator
+        run: swift build --target SwiftDecisionGLiNER --traits GLiNER --triple arm64-apple-ios17.0-simulator
+      - name: Compile at package iOS 15 deployment floor
+        run: swift build --target SwiftDecisionGLiNER --traits GLiNER --triple arm64-apple-ios15.0-simulator
+      - name: Check Python tool syntax
+        run: python3 -m py_compile Scripts/gliner/prepare.py

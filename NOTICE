@@ -15,3 +15,16 @@ and neural-network structure are independently implemented in Swift/MLX in
 accordance with the Apache-2.0 license. Model weights are provided separately
 by Convai Innovations and are not included in this repository. Consult the
 checkpoint model card for applicable weight terms.
+
+SwiftDecision GLiNER integration
+Copyright 2026 SwiftDecision contributors
+
+The optional GLiNER adapter reimplements the classification input layout and
+WhitespaceTokenSplitter conventions from Fastino AI's GLiNER2 project:
+https://github.com/fastino-ai/GLiNER2
+Upstream source revision: ca4f68235b50fe4c3ecf3876851d748fe4b15c6c
+Copyright Fastino AI and GLiNER2 contributors. Licensed under Apache-2.0.
+
+The separately provisioned fastino/gliner2.5-small-v1 checkpoint is published
+under Apache-2.0. Neither original nor converted weights are included here.
+https://huggingface.co/fastino/gliner2.5-small-v1

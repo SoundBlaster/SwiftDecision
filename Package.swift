@@ -13,10 +13,12 @@ let package = Package(
     products: [
         .library(name: "SwiftDecision", targets: ["SwiftDecision"]),
         .library(name: "SwiftDecisionOpenAI", targets: ["SwiftDecisionOpenAI"]),
+        .library(name: "SwiftDecisionGLiNER", targets: ["SwiftDecisionGLiNER"]),
         .executable(name: "InboxTriageExample", targets: ["InboxTriageExample"]),
     ],
     traits: [
         .trait(name: "MLX", description: "Enable the native Apple MLX Laya backend."),
+        .trait(name: "GLiNER", description: "Enable the optional GLiNER Core ML backend and tokenizer."),
     ],
     dependencies: [
         .package(
@@ -44,6 +46,15 @@ let package = Package(
             name: "SwiftDecisionOpenAI",
             dependencies: ["SwiftDecision"]
         ),
+        .target(
+            name: "SwiftDecisionGLiNER",
+            dependencies: [
+                "SwiftDecision",
+            ],
+            swiftSettings: [
+                .define("SWIFTDECISION_GLINER", .when(platforms: [.iOS, .macOS], traits: ["GLiNER"])),
+            ]
+        ),
         .executableTarget(
             name: "InboxTriageExample",
             dependencies: ["SwiftDecision"],
@@ -62,6 +73,14 @@ let package = Package(
         .testTarget(
             name: "SwiftDecisionOpenAITests",
             dependencies: ["SwiftDecision", "SwiftDecisionOpenAI"]
+        ),
+        .testTarget(
+            name: "SwiftDecisionGLiNERTests",
+            dependencies: ["SwiftDecision", "SwiftDecisionGLiNER"],
+            resources: [.copy("Fixtures")],
+            swiftSettings: [
+                .define("SWIFTDECISION_GLINER", .when(platforms: [.iOS, .macOS], traits: ["GLiNER"])),
+            ]
         ),
     ]
 )

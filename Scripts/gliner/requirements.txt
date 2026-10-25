@@ -1,0 +1,8 @@
+# Reference/export tools only; never linked into a Swift application.
+gliner2[local] @ git+https://github.com/fastino-ai/GLiNER2.git@ca4f68235b50fe4c3ecf3876851d748fe4b15c6c
+torch==2.8.0
+transformers==4.57.6
+coremltools==9.0
+numpy==1.26.4
+sentencepiece==0.2.2
+protobuf==7.36.2

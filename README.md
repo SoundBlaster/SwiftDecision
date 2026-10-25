@@ -195,6 +195,18 @@ swift test --traits MLX --triple arm64-apple-macosx14.0 --filter LayaParityTests
 
 The parity check requires matching selected option identifiers and compares probabilities within `0.0001` for FP32 or `0.02` for FP16. It verifies runtime compatibility for those test inputs, not model quality on arbitrary application data. See the [Laya MLX inference pipeline](Documentation/LayaMLXInferencePipeline.md) for the model input and native forward pass. The model weights are not redistributed; see [NOTICE](NOTICE) and the model card for terms.
 
+### Experimental small GLiNER with Core ML
+
+The optional `SwiftDecisionGLiNER` product and `GLiNER` trait provide
+`GLiNERCoreMLBackend` for a locally provisioned `fastino/gliner2.5-small-v1`
+classification export, on macOS 14+ and iOS 17+. Neither weights nor Python,
+PyTorch, or MLX are linked into an app by this adapter. The default INT8 export
+is about 78 MB plus an 8.3 MB tokenizer; download/provision these assets separately
+if the application must stay small.
+
+This is a classification pilot, not a calibrated or general-purpose Jev replacement.
+See [setup, output contract, measurements, and known errors](Documentation/GLiNERCoreMLBackend.md).
+
 ### Bring your own backend
 
 Implement `DecisionBackend` to connect another provider or an application-owned model. `ClosureDecisionBackend` is available for simple adapters, deterministic tests, and offline examples:
@@ -250,11 +262,12 @@ An optional `DecisionMetricsHandler` receives one measurement per completed or f
 
 ## Benchmarks
 
-The current model-backed inference backend included in this package is native Laya MLX. Hosted providers such as TypeSafe Jev are maintained as separate provider packages. The mock backend is for examples and contract tests, not a model benchmark.
+Local model backends include native Laya MLX and the experimental small GLiNER Core ML adapter. Hosted providers such as TypeSafe Jev are maintained as separate provider packages. The mock backend is for examples and contract tests, not a model benchmark.
 
 | Backend | Example workload | Correctness evidence | P50 / P95 latency | Throughput |
 | --- | --- | --- | --- | --- |
 | Native Laya MLX | Outage impact (Noul), duplicate-charge routing (Choice), answer quality (Score) | Optional local Python parity test in FP16 and FP32 | Not measured | Not measured |
+| Experimental GLiNER Core ML | 41 English diagnostic inputs, including reversed labels and missing evidence | Exact token parity; native INT8 runtime parity; 32/37 labeled cases correct on a small diagnostic set | About 38 ms P50 on M4 Pro CPU; P95 not measured | Not measured |
 | `ClosureDecisionBackend` | Deterministic Noul, Choice, Score fixtures | Request/response contracts covered in CI | Not applicable | Not applicable |
 
 ## Requirements and validation
@@ -262,6 +275,7 @@ The current model-backed inference backend included in this package is native La
 - Swift tools 6.3 or newer.
 - Base package deployment targets: macOS 10.15, iOS 15, tvOS 13, and watchOS 6.
 - Native MLX backend: Apple Silicon, macOS 14+ or iOS 17+, and the `MLX` trait.
+- Experimental GLiNER backend: macOS 14+ or iOS 17+, the `GLiNER` trait and separately provisioned assets.
 
 Build and test without optional traits:
 

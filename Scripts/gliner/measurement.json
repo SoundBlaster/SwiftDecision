@@ -1,0 +1,61 @@
+{
+  "model": "fastino/gliner2.5-small-v1",
+  "revision": "df5910e44bc4ffdb0d95399a83b0ca4516349aa5",
+  "weightBits": 8,
+  "maxProbabilityDeltaFromTorch": 0.05892490661135874,
+  "winnerAgreementWithTorch": 41,
+  "caseCount": 41,
+  "packageBytes": 78209741,
+  "date": "2026-10-25",
+  "hardware": "Apple M4 Pro",
+  "os": "macOS 27.0",
+  "runtime": "Core ML CPU only, FP32 compute, INT8 weights",
+  "categories": {
+    "grounded": {
+      "correct": 31,
+      "total": 35
+    },
+    "missing-evidence": {
+      "correct": 1,
+      "total": 2
+    }
+  },
+  "incorrectCases": [
+    {
+      "id": "pending",
+      "expected": "false",
+      "actual": "true",
+      "probability": 0.8147136180423219
+    },
+    {
+      "id": "no-refund",
+      "expected": "false",
+      "actual": "true",
+      "probability": 0.9995393720312862
+    },
+    {
+      "id": "unknown-coin",
+      "expected": "unknown",
+      "actual": "heads",
+      "probability": 0.9854687057683963
+    },
+    {
+      "id": "engine-no-refund",
+      "expected": "false",
+      "actual": "true",
+      "probability": 0.9947554000355983
+    },
+    {
+      "id": "engine-cool-reversed",
+      "expected": "0",
+      "actual": "1",
+      "probability": 0.634706573102212
+    }
+  ],
+  "arbitraryCases": 4,
+  "tokenizerBytes": 8337288,
+  "warmMedianSeconds": 0.037528291,
+  "runtimeParityTolerance": 0.0001,
+  "swiftRuntimeParityCases": 41,
+  "float32TorchParityCases": 41
+}
