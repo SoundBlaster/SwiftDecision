@@ -1,5 +1,10 @@
 # On-device decisions with Foundation Models
 
+**Deferred experiment — 2026-10-25.** PR #22 is closed without merging. The
+`codex/foundation-models-backend` branch retains the unreleased adapter, fixtures
+and evidence. The related Oracle pilot is also closed; its [archive index](https://github.com/SoundBlaster/SwiftDecision-Examples/blob/codex/oracle-foundation-models-pilot/DOCS/EXPERIMENTS/APPLE_INTELLIGENCE_ARCHIVE.md)
+links the full results and criteria for revisiting after a model update.
+
 The non-default `FoundationModels` SwiftPM trait enables `FoundationModelsDecisionBackend`
 inside `SwiftDecision`. It uses Apple's on-device `SystemLanguageModel` and guided generation
 for Noul, Choice, and Score. It needs no API key, provider account, separate checkpoint, or MLX
