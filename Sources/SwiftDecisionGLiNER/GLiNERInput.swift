@@ -29,6 +29,16 @@ struct GLiNERInput: Equatable {
         maximumTokens: Int,
         encode: (String) throws -> [Int]
     ) throws -> Self {
+        try validate(prompt)
+
+        var instruction = "decision: " + prompt.instructions
+        for option in prompt.options {
+            instruction += " [DESCRIPTION] \(option.id): \(option.description)"
+        }
+        return try Self.encode(prompt: prompt, instruction: instruction, maximumTokens: maximumTokens, encode: encode)
+    }
+
+    static func validate(_ prompt: DecisionPrompt) throws {
         let reserved = ["[P]", "[L]", "[C]", "[E]", "[R]", "[DESCRIPTION]", "[EXAMPLE]", "[OUTPUT]", "(", ")"]
         let schemaStrings = [prompt.instructions] + prompt.options.flatMap { [$0.id, $0.description] }
         guard prompt.options.count >= 2,
@@ -38,11 +48,12 @@ struct GLiNERInput: Equatable {
                       && !reserved.contains(where: value.contains)
               })
         else { throw GLiNERError.invalidInput }
+    }
 
-        var instruction = "decision: " + prompt.instructions
-        for option in prompt.options {
-            instruction += " [DESCRIPTION] \(option.id): \(option.description)"
-        }
+    private static func encode(
+        prompt: DecisionPrompt, instruction: String, maximumTokens: Int,
+        encode: (String) throws -> [Int]
+    ) throws -> Self {
         var ids: [Int] = []
         var markers: [Int] = []
         func append(_ text: String) throws {

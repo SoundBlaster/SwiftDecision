@@ -13,6 +13,7 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
     private let model: MLModel
     private let tokenizer: GLiNERTokenizer
     private let metadata: Metadata
+    private let choiceOrdering: GLiNERChoiceOrdering
 
     private struct Metadata: Decodable {
         let formatVersion: Int
@@ -34,19 +35,22 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
     ///   - directory: Output of `Scripts/gliner/prepare.py`, containing metadata,
     ///     tokenizer files and `GLiNERSmall.mlpackage` or `GLiNERSmall.mlmodelc`.
     ///   - computeUnits: Core ML hardware selection. Use `.cpuOnly` for parity tests.
+    ///   - choiceOrdering: Optional Choice schema canonicalization. Defaults to preserving input.
     /// - Throws: A file/model loading error, or ``GLiNERError/invalidCheckpoint``.
     @concurrent
     public static func load(
         checkpointAt directory: URL,
-        computeUnits: MLComputeUnits = .all
+        computeUnits: MLComputeUnits = .all,
+        choiceOrdering: GLiNERChoiceOrdering = .input
     ) async throws -> GLiNERCoreMLBackend {
         try Task.checkCancellation()
-        let backend = try GLiNERCoreMLBackend(checkpointAt: directory, computeUnits: computeUnits)
+        let backend = try GLiNERCoreMLBackend(checkpointAt: directory, computeUnits: computeUnits,
+                                            choiceOrdering: choiceOrdering)
         try Task.checkCancellation()
         return backend
     }
 
-    private init(checkpointAt directory: URL, computeUnits: MLComputeUnits) throws {
+    private init(checkpointAt directory: URL, computeUnits: MLComputeUnits, choiceOrdering: GLiNERChoiceOrdering) throws {
         guard directory.isFileURL else { throw GLiNERError.invalidCheckpoint }
         let data = try Data(contentsOf: directory.appendingPathComponent("gliner.json"))
         let metadata = try JSONDecoder().decode(Metadata.self, from: data)
@@ -85,6 +89,7 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
         self.metadata = metadata
         self.tokenizer = tokenizer
         self.model = model
+        self.choiceOrdering = choiceOrdering
     }
 
     /// Returns a complete softmax vector in the exact prompt option order.
@@ -93,7 +98,8 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
     /// There are no retries, implicit fallback, or winner-only fabricated scores.
     public func predict(for prompt: DecisionPrompt) async throws -> DecisionPrediction {
         try Task.checkCancellation()
-        let input = try encodedInput(for: prompt)
+        let layout = try GLiNERChoiceLayout(prompt: prompt, ordering: choiceOrdering)
+        let input = try encodedInput(for: layout.prompt)
         let count = metadata.sequenceLength
         let ids = try MLMultiArray(shape: [1, NSNumber(value: count)], dataType: .int32)
         let mask = try MLMultiArray(shape: [1, NSNumber(value: count)], dataType: .int32)
@@ -110,7 +116,8 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
               values.count == count else { throw GLiNERError.invalidOutput }
         let logits = input.markerPositions.map { values[$0].doubleValue }
         let probabilities = try GLiNERInput.probabilities(from: logits, expectedCount: prompt.options.count)
-        return DecisionPrediction(probabilities: probabilities, modelIdentifier: metadata.modelID + "@" + metadata.revision)
+        return try DecisionPrediction(probabilities: layout.restoringOriginalOrder(probabilities),
+                                      modelIdentifier: metadata.modelID + "@" + metadata.revision)
     }
 
     private func prediction(from features: MLDictionaryFeatureProvider) throws -> any MLFeatureProvider {

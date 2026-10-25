@@ -106,6 +106,31 @@ the backend actor. Cancellation is checked before and after the synchronous Core
 ML call; it does not preempt an in-flight native prediction. No retries, service
 calls, secret lookup, or cloud fallback are performed.
 
+### Optional canonical Choice order
+
+```swift
+let backend = try await GLiNERCoreMLBackend.load(
+    checkpointAt: assetsDirectory,
+    choiceOrdering: .canonical
+)
+```
+
+The default is `.input`, preserving the existing model-facing schema. Opting in
+to `.canonical` sorts Choice options by NFC-normalized, lowercased description
+using locale-independent UTF-8 order, then assigns internal numeric IDs. Exact
+normalized text and original IDs break ties. Scores are mapped back to the
+caller's original option order, so labels, selection policy and traces remain
+aligned. Invalid original IDs are still rejected. Noul and Score are unchanged.
+The setting belongs only to this GLiNER instance; Jev, Luna Decisio and the core
+engine are not configured or reordered by it.
+
+This stabilizes the schema for the same descriptions, instructions and context.
+It does not rewrite a question containing reordered alternatives, translate
+Russian input, improve semantic correctness or calibrate confidence. Avoid
+instructions that refer to caller IDs or ordinal positions when using internal
+canonical IDs. Options with identical descriptions cannot be semantically
+distinguished by this ordering rule.
+
 ## Output contract and responsibility
 
 GLiNER receives a single exclusive classification schema with task name
@@ -150,6 +175,22 @@ Explicit live local inference through the public Swift backend and engine:
 SWIFTDECISION_GLINER_CHECKPOINT=/path/to/gliner-small \
 swift test --traits GLiNER --triple arm64-apple-macosx14.0 --filter GLiNER
 ```
+
+Opt-in order diagnostics and a native canonical score-alignment regression:
+
+```sh
+SWIFTDECISION_GLINER_ORDER_CHECKPOINT=/path/to/gliner-small \
+swift test --traits GLiNER --triple arm64-apple-macosx14.0 --filter GLiNEROrder
+```
+
+The diagnostic prints raw and canonical scores separately for English/Russian
+bare alternatives, fixed questions, explicit criteria and supplied evidence.
+Passing this diagnostic confirms output structure, not answer quality.
+[`order-measurement.json`](../Scripts/gliner/order-measurement.json) records the
+64 predictions from the local INT8 CPU run. With fixed instructions and context,
+canonical output matches by label after schema permutations. Changing the bare
+question from `Red or blue?` to `blue or Red?` can still change the winner; that
+changes model input text, which this option intentionally does not canonicalize.
 
 The checked-in fixture records both original Torch probabilities and the INT8
 Core ML reference. Swift's token IDs and marker positions must match exactly.

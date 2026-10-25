@@ -1,0 +1,906 @@
+{
+  "date": "2026-10-25",
+  "modelID": "fastino/gliner2.5-small-v1",
+  "revision": "df5910e44bc4ffdb0d95399a83b0ca4516349aa5",
+  "weightBits": 8,
+  "computeUnits": "cpuOnly",
+  "interpretation": "Schema order diagnostics, not quality or probability calibration. Inputs are defined in GLiNEROrderDiagnosticTests. canonical does not rewrite instructions or context.",
+  "results": [
+    {
+      "case": "russian-bare",
+      "labels": [
+        "Красный",
+        "синий"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.20143515871157353,
+        0.7985648412884265
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "Красный",
+        "синий"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.20143515871157353,
+        0.7985648412884265
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "синий",
+        "Красный"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.4865303805164785,
+        0.5134696194835214
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "синий",
+        "Красный"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9793621834262055,
+        0.020637816573794463
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "Красный",
+        "синий"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9885649632164588,
+        0.01143503678354108
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "Красный",
+        "синий"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.20143515871157353,
+        0.7985648412884265
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "синий",
+        "Красный"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.4035954258672295,
+        0.5964045741327706
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "russian-bare",
+      "labels": [
+        "синий",
+        "Красный"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9793621834262055,
+        0.020637816573794463
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.929853168935659,
+        0.07014683106434115
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9879503621797985,
+        0.01204963782020148
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.919810880834894,
+        0.08018911916510597
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.919810880834894,
+        0.08018911916510597
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9568901029344055,
+        0.043109897065594455
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9879503621797985,
+        0.01204963782020148
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9978417191903826,
+        0.0021582808096174792
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-bare",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.919810880834894,
+        0.08018911916510597
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.929853168935659,
+        0.07014683106434115
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9879503621797985,
+        0.01204963782020148
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.01204963782020148,
+        0.9879503621797985
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.01204963782020148,
+        0.9879503621797985
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9568901029344055,
+        0.043109897065594455
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9879503621797985,
+        0.01204963782020148
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.025817807526443942,
+        0.9741821924735561
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-fixed-question",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.01204963782020148,
+        0.9879503621797985
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.4179504124563498,
+        0.5820495875436503
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.5188752675068765,
+        0.4811247324931235
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.4811247324931235,
+        0.5188752675068765
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.4811247324931235,
+        0.5188752675068765
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.03633035687002078,
+        0.9636696431299792
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.5188752675068765,
+        0.4811247324931235
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9462709347225526,
+        0.05372906527744739
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "english-neutral",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.4811247324931235,
+        0.5188752675068765
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.17381187335984316,
+        0.8261881266401568
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.17381187335984316,
+        0.8261881266401568
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.6146697261018534,
+        0.3853302738981465
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.8261881266401568,
+        0.17381187335984316
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.6290842011656138,
+        0.37091579883438625
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.17381187335984316,
+        0.8261881266401568
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.026160694621568566,
+        0.9738393053784314
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "star",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.8261881266401568,
+        0.17381187335984316
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.5683854287572137,
+        0.4316145712427864
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.5683854287572137,
+        0.4316145712427864
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.023161047949015526,
+        0.9768389520509846
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.4316145712427864,
+        0.5683854287572137
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9500398237741138,
+        0.04996017622588621
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Hello",
+        "Sun"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.5683854287572137,
+        0.4316145712427864
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.009101756607214644,
+        0.9908982433927853
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "star-evidence",
+      "labels": [
+        "Sun",
+        "Hello"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.4316145712427864,
+        0.5683854287572137
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "technical",
+        "billing"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.00020108616832011135,
+        0.99979891383168
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "technical",
+        "billing"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.0007478593929944921,
+        0.9992521406070055
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "billing",
+        "technical"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9992521406070055,
+        0.0007478593929944921
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "billing",
+        "technical"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9992521406070055,
+        0.0007478593929944921
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "technical",
+        "billing"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        5.620313305307723e-06,
+        0.9999943796866946
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "technical",
+        "billing"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.0007478593929944921,
+        0.9992521406070055
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "billing",
+        "technical"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9999748691841278,
+        2.5130815872161106e-05
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "billing",
+      "labels": [
+        "billing",
+        "technical"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9992521406070055,
+        0.0007478593929944921
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.0005101060727578123,
+        0.9994898939272421
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.0005327257952858548,
+        0.9994672742047143
+      ],
+      "reversed": false,
+      "semanticIDs": false
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9994672742047143,
+        0.0005327257952858548
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9994672742047143,
+        0.0005327257952858548
+      ],
+      "reversed": true,
+      "semanticIDs": false
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        2.8665834183022436e-05,
+        0.999971334165817
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "Red",
+        "blue"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.0005327257952858548,
+        0.9994672742047143
+      ],
+      "reversed": false,
+      "semanticIDs": true
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "input",
+      "probabilities": [
+        0.9999630347165087,
+        3.6965283491193725e-05
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    },
+    {
+      "case": "blue-evidence",
+      "labels": [
+        "blue",
+        "Red"
+      ],
+      "ordering": "canonical",
+      "probabilities": [
+        0.9994672742047143,
+        0.0005327257952858548
+      ],
+      "reversed": true,
+      "semanticIDs": true
+    }
+  ]
+}
