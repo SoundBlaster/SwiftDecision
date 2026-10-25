@@ -1,9 +1,7 @@
 #if SWIFTDECISION_GLINER
 import CoreML
 import Foundation
-import Hub
 import SwiftDecision
-import Tokenizers
 
 /// Local GLiNER2.5-small classification using an explicitly provisioned Core ML export.
 ///
@@ -13,8 +11,7 @@ import Tokenizers
 @available(macOS 14, iOS 17, *)
 public actor GLiNERCoreMLBackend: DecisionBackend {
     private let model: MLModel
-    private let tokenizer: any Tokenizer
-    private let addedTokenIDs: [String: Int]
+    private let tokenizer: GLiNERTokenizer
     private let metadata: Metadata
 
     private struct Metadata: Decodable {
@@ -64,30 +61,9 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
         else { throw GLiNERError.invalidCheckpoint }
 
         let tokenizerData = try Data(contentsOf: directory.appendingPathComponent("tokenizer.json"))
-        let configurationData = try Data(contentsOf: directory.appendingPathComponent("tokenizer_config.json"))
-        guard var tokenizerConfiguration = try JSONSerialization.jsonObject(with: configurationData) as? [String: Any],
-              let tokenizerObject = try JSONSerialization.jsonObject(with: tokenizerData) as? [String: Any],
-              let modelObject = tokenizerObject["model"] as? [String: Any], modelObject["type"] as? String == "Unigram",
-              let addedTokens = tokenizerObject["added_tokens"] as? [[String: Any]]
-        else { throw GLiNERError.invalidCheckpoint }
-        var addedTokenIDs: [String: Int] = [:]
-        for token in addedTokens {
-            guard let content = token["content"] as? String, let id = token["id"] as? Int,
-                  addedTokenIDs[content] == nil, (0 ..< metadata.vocabularySize).contains(id)
-            else { throw GLiNERError.invalidCheckpoint }
-            addedTokenIDs[content] = id
-        }
-        // swift-transformers 1.3.4 has no DebertaV2Tokenizer dispatch entry.
-        // Select its Unigram implementation; keep the actual checkpoint's
-        // vocabulary, added tokens, normalizer and pre-tokenizer unchanged.
-        tokenizerConfiguration["tokenizer_class"] = "XLMRobertaTokenizer"
-        let tokenizer = try AutoTokenizer.from(
-            tokenizerConfig: Config(tokenizerConfiguration as [NSString: Any]),
-            tokenizerData: Config(tokenizerObject as [NSString: Any])
-        )
+        let tokenizer = try GLiNERTokenizer(data: tokenizerData, vocabularySize: metadata.vocabularySize)
         for (token, id) in ["[P]": 128003, "[L]": 128007, "[SEP_TEXT]": 128002, "[DESCRIPTION]": 128010] {
-            guard addedTokenIDs[token] == id,
-                  tokenizer.tokenize(text: token) == [token]
+            guard tokenizer.addedTokenID(token) == id, try tokenizer.encode(token) == [id]
             else { throw GLiNERError.invalidCheckpoint }
         }
         let configuration = MLModelConfiguration()
@@ -108,7 +84,6 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
         else { throw GLiNERError.invalidCheckpoint }
         self.metadata = metadata
         self.tokenizer = tokenizer
-        self.addedTokenIDs = addedTokenIDs
         self.model = model
     }
 
@@ -144,15 +119,7 @@ public actor GLiNERCoreMLBackend: DecisionBackend {
 
     func encodedInput(for prompt: DecisionPrompt) throws -> GLiNERInput {
         let input = try GLiNERInput.build(for: prompt, maximumTokens: metadata.sequenceLength) {
-            // UnigramTokenizer 1.3.4 recognizes added-token boundaries but
-            // its ID lookup ignores the added-token table. Resolve those
-            // IDs explicitly instead of silently feeding [UNK] embeddings.
-            try tokenizer.tokenize(text: $0).map { token in
-                guard let id = addedTokenIDs[token] ?? tokenizer.convertTokenToId(token) else {
-                    throw GLiNERError.invalidInput
-                }
-                return id
-            }
+            try tokenizer.encode($0)
         }
         guard input.inputIDs.allSatisfy({ (0 ..< metadata.vocabularySize).contains($0) }) else {
             throw GLiNERError.invalidInput

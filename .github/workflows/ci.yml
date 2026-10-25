@@ -67,5 +67,7 @@ jobs:
         run: swift test --traits GLiNER --triple arm64-apple-macosx14.0
       - name: Build adapter for iOS 17 Simulator
         run: swift build --target SwiftDecisionGLiNER --traits GLiNER --triple arm64-apple-ios17.0-simulator
+      - name: Compile at package iOS 15 deployment floor
+        run: swift build --target SwiftDecisionGLiNER --traits GLiNER --triple arm64-apple-ios15.0-simulator
       - name: Check Python tool syntax
         run: python3 -m py_compile Scripts/gliner/prepare.py

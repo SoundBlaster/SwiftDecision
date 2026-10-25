@@ -50,7 +50,6 @@ let package = Package(
             name: "SwiftDecisionGLiNER",
             dependencies: [
                 "SwiftDecision",
-                .product(name: "Tokenizers", package: "swift-transformers", condition: .when(platforms: [.iOS, .macOS], traits: ["GLiNER"])),
             ],
             swiftSettings: [
                 .define("SWIFTDECISION_GLINER", .when(platforms: [.iOS, .macOS], traits: ["GLiNER"])),

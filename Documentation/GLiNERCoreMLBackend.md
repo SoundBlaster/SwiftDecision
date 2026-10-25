@@ -18,6 +18,10 @@ calibrated or general-purpose replacement for Jev.
   activation and removal; this pilot does not add a downloader.
 - Python, PyTorch and coremltools are developer export tools only. They are not
   embedded in the Swift app. MLX is not required by this backend.
+- Tokenization uses a small native Unigram implementation for this checkpoint's
+  exact NFC/whitespace/Metaspace configuration, with byte-distinct vocabulary
+  lookup and explicit special-token IDs. The general-purpose Tokenizers/Hub
+  runtime is not linked by the GLiNER adapter.
 - The measured INT8 `.mlpackage` is **78,209,741 bytes**; the two tokenizer files
   add **8,337,288 bytes**. This is disk storage, not a peak RAM measurement or an
   App Store compressed-download measurement. Core ML compilation can add storage.
@@ -182,10 +186,12 @@ Several compatibility problems were caught by these checks:
 1. The upstream facade's cache fingerprint can reuse an earlier schema after
    label order changes. The exporter compiles each schema directly so reversed
    cases actually change the encoder input.
-2. swift-transformers 1.3.4 has no DeBERTa tokenizer dispatch entry, and its
-   Unigram lookup ignores added-token IDs. The adapter explicitly selects the
-   Unigram algorithm with the checkpoint's real configuration, then resolves
-   added tokens through the original ID table. It never falls back to BPE.
+2. The initial general-purpose tokenizer dependency raised the minimum supported
+   iOS version during Xcode app dependency builds. The adapter now implements
+   the checkpoint's Unigram pipeline directly, checks its exact configuration,
+   and resolves added tokens through the original ID table. Its IDs are checked
+   against 35 additional Python fixtures for Unicode, whitespace and special
+   markers. It never falls back to BPE or changes package deployment floors.
 3. Transformers' scripted shape branches need a narrow export-only specialization
    for fixed-shape self-attention. The trace is checked against the original
    Torch forward pass before conversion.

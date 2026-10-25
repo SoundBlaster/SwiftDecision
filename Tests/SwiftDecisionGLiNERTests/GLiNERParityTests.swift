@@ -37,6 +37,13 @@ struct GLiNERParityTests {
             return
         }
         let directory = URL(fileURLWithPath: try #require(Self.checkpoint))
+        struct TokenReference: Decodable { let text: String; let ids: [Int] }
+        let tokenReferences = try JSONDecoder().decode([TokenReference].self, from: Data(contentsOf:
+            Bundle.module.url(forResource: "tokenizer-reference", withExtension: "json", subdirectory: "Fixtures")!))
+        let tokenizer = try GLiNERTokenizer(data: Data(contentsOf: directory.appendingPathComponent("tokenizer.json")), vocabularySize: 128011)
+        for reference in tokenReferences {
+            #expect(try tokenizer.encode(reference.text) == reference.ids, "Tokenizer: \(reference.text)")
+        }
         let references = try JSONDecoder().decode([Reference].self, from: Data(contentsOf:
             Bundle.module.url(forResource: "reference", withExtension: "json", subdirectory: "Fixtures")!))
         let backend = try await GLiNERCoreMLBackend.load(checkpointAt: directory, computeUnits: .cpuOnly)
