@@ -4,6 +4,7 @@
 
 ### Added
 
+- Add the experimental `SwiftDecisionGLiNER` product and `GLiNER` trait for a separately provisioned GLiNER2.5-small Core ML checkpoint, with INT8 export tooling, ordered Noul/Choice/Score outputs and opt-in local parity checks.
 - Add injectable `DecisionClock` time and cancellable waiting for inference budgets and timeouts, with a system-uptime default that preserves deployment targets.
 - Add provider-neutral `APIEndpoint` configuration for provider defaults, API roots, and complete operation URLs.
 - Let the OpenAI Decisions adapter append `/decisions` to API roots or use a complete operation URL unchanged. Custom endpoints require an explicit API key.

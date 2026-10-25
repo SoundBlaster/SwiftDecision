@@ -1,0 +1,824 @@
+[
+  {
+    "id": "delivered",
+    "kind": "noul",
+    "instructions": "Is the shipment delivered?",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "false",
+        "description": "No, the statement is false."
+      },
+      {
+        "id": "true",
+        "description": "Yes, the statement is true."
+      }
+    ],
+    "expected": "true",
+    "category": "grounded"
+  },
+  {
+    "id": "pending",
+    "kind": "noul",
+    "instructions": "Is the shipment delivered?",
+    "context": "The shipment is still pending.",
+    "options": [
+      {
+        "id": "false",
+        "description": "No, the statement is false."
+      },
+      {
+        "id": "true",
+        "description": "Yes, the statement is true."
+      }
+    ],
+    "expected": "false",
+    "category": "grounded"
+  },
+  {
+    "id": "refund",
+    "kind": "noul",
+    "instructions": "Does the customer request a refund?",
+    "context": "The customer asks for a refund.",
+    "options": [
+      {
+        "id": "false",
+        "description": "No, the statement is false."
+      },
+      {
+        "id": "true",
+        "description": "Yes, the statement is true."
+      }
+    ],
+    "expected": "true",
+    "category": "grounded"
+  },
+  {
+    "id": "no-refund",
+    "kind": "noul",
+    "instructions": "Does the customer request a refund?",
+    "context": "The customer thanks us and wants to keep the product.",
+    "options": [
+      {
+        "id": "false",
+        "description": "No, the statement is false."
+      },
+      {
+        "id": "true",
+        "description": "Yes, the statement is true."
+      }
+    ],
+    "expected": "false",
+    "category": "grounded"
+  },
+  {
+    "id": "star",
+    "kind": "choice",
+    "instructions": "Choose the item that is a star.",
+    "context": "Select using ordinary factual knowledge.",
+    "options": [
+      {
+        "id": "hello",
+        "description": "Hello"
+      },
+      {
+        "id": "sun",
+        "description": "Sun"
+      }
+    ],
+    "expected": "sun",
+    "category": "grounded"
+  },
+  {
+    "id": "star-reversed",
+    "kind": "choice",
+    "instructions": "Choose the item that is a star.",
+    "context": "Select using ordinary factual knowledge.",
+    "options": [
+      {
+        "id": "sun",
+        "description": "Sun"
+      },
+      {
+        "id": "hello",
+        "description": "Hello"
+      }
+    ],
+    "expected": "sun",
+    "category": "grounded"
+  },
+  {
+    "id": "cool",
+    "kind": "choice",
+    "instructions": "Choose the cool color.",
+    "context": "Blue is cool. Red is warm.",
+    "options": [
+      {
+        "id": "red",
+        "description": "Red"
+      },
+      {
+        "id": "blue",
+        "description": "Blue"
+      }
+    ],
+    "expected": "blue",
+    "category": "grounded"
+  },
+  {
+    "id": "cool-reversed",
+    "kind": "choice",
+    "instructions": "Choose the cool color.",
+    "context": "Blue is cool. Red is warm.",
+    "options": [
+      {
+        "id": "blue",
+        "description": "Blue"
+      },
+      {
+        "id": "red",
+        "description": "Red"
+      }
+    ],
+    "expected": "blue",
+    "category": "grounded"
+  },
+  {
+    "id": "shipment",
+    "kind": "choice",
+    "instructions": "Choose the shipment status supported by the text.",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "pending",
+        "description": "Pending"
+      },
+      {
+        "id": "delivered",
+        "description": "Delivered"
+      },
+      {
+        "id": "lost",
+        "description": "Lost"
+      }
+    ],
+    "expected": "delivered",
+    "category": "grounded"
+  },
+  {
+    "id": "shipment-reversed",
+    "kind": "choice",
+    "instructions": "Choose the shipment status supported by the text.",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "lost",
+        "description": "Lost"
+      },
+      {
+        "id": "delivered",
+        "description": "Delivered"
+      },
+      {
+        "id": "pending",
+        "description": "Pending"
+      }
+    ],
+    "expected": "delivered",
+    "category": "grounded"
+  },
+  {
+    "id": "sentiment",
+    "kind": "choice",
+    "instructions": "Classify the review sentiment.",
+    "context": "I absolutely love this product.",
+    "options": [
+      {
+        "id": "negative",
+        "description": "Negative review"
+      },
+      {
+        "id": "positive",
+        "description": "Positive review"
+      },
+      {
+        "id": "neutral",
+        "description": "Neutral review"
+      }
+    ],
+    "expected": "positive",
+    "category": "grounded"
+  },
+  {
+    "id": "sentiment-reversed",
+    "kind": "choice",
+    "instructions": "Classify the review sentiment.",
+    "context": "I absolutely love this product.",
+    "options": [
+      {
+        "id": "neutral",
+        "description": "Neutral review"
+      },
+      {
+        "id": "positive",
+        "description": "Positive review"
+      },
+      {
+        "id": "negative",
+        "description": "Negative review"
+      }
+    ],
+    "expected": "positive",
+    "category": "grounded"
+  },
+  {
+    "id": "support",
+    "kind": "choice",
+    "instructions": "Route the support message to the correct department.",
+    "context": "I was charged twice for the same order.",
+    "options": [
+      {
+        "id": "technical",
+        "description": "Technical support"
+      },
+      {
+        "id": "billing",
+        "description": "Billing"
+      },
+      {
+        "id": "shipping",
+        "description": "Shipping"
+      }
+    ],
+    "expected": "billing",
+    "category": "grounded"
+  },
+  {
+    "id": "support-reversed",
+    "kind": "choice",
+    "instructions": "Route the support message to the correct department.",
+    "context": "I was charged twice for the same order.",
+    "options": [
+      {
+        "id": "shipping",
+        "description": "Shipping"
+      },
+      {
+        "id": "billing",
+        "description": "Billing"
+      },
+      {
+        "id": "technical",
+        "description": "Technical support"
+      }
+    ],
+    "expected": "billing",
+    "category": "grounded"
+  },
+  {
+    "id": "animal",
+    "kind": "choice",
+    "instructions": "Choose the animal mentioned in the text.",
+    "context": "A cat is sleeping on the sofa.",
+    "options": [
+      {
+        "id": "dog",
+        "description": "Dog"
+      },
+      {
+        "id": "cat",
+        "description": "Cat"
+      },
+      {
+        "id": "bird",
+        "description": "Bird"
+      }
+    ],
+    "expected": "cat",
+    "category": "grounded"
+  },
+  {
+    "id": "animal-reversed",
+    "kind": "choice",
+    "instructions": "Choose the animal mentioned in the text.",
+    "context": "A cat is sleeping on the sofa.",
+    "options": [
+      {
+        "id": "bird",
+        "description": "Bird"
+      },
+      {
+        "id": "cat",
+        "description": "Cat"
+      },
+      {
+        "id": "dog",
+        "description": "Dog"
+      }
+    ],
+    "expected": "cat",
+    "category": "grounded"
+  },
+  {
+    "id": "severity-low",
+    "kind": "score",
+    "instructions": "Rate the incident severity using the supplied rubric.",
+    "context": "The issue is cosmetic and causes no loss of functionality.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Low: cosmetic issue only"
+      },
+      {
+        "id": "1",
+        "description": "Medium: partial loss of functionality"
+      },
+      {
+        "id": "2",
+        "description": "High: complete service outage"
+      }
+    ],
+    "expected": "0",
+    "category": "grounded"
+  },
+  {
+    "id": "severity-medium",
+    "kind": "score",
+    "instructions": "Rate the incident severity using the supplied rubric.",
+    "context": "One optional feature is unavailable; the main workflow still works.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Low: cosmetic issue only"
+      },
+      {
+        "id": "1",
+        "description": "Medium: partial loss of functionality"
+      },
+      {
+        "id": "2",
+        "description": "High: complete service outage"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "severity-high",
+    "kind": "score",
+    "instructions": "Rate the incident severity using the supplied rubric.",
+    "context": "All customers are locked out of the service.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Low: cosmetic issue only"
+      },
+      {
+        "id": "1",
+        "description": "Medium: partial loss of functionality"
+      },
+      {
+        "id": "2",
+        "description": "High: complete service outage"
+      }
+    ],
+    "expected": "2",
+    "category": "grounded"
+  },
+  {
+    "id": "arbitrary-hello",
+    "kind": "choice",
+    "instructions": "Choose whichever option first comes to mind.",
+    "context": "There is no factual reason to prefer either option.",
+    "options": [
+      {
+        "id": "hello",
+        "description": "Hello"
+      },
+      {
+        "id": "kitty",
+        "description": "Kitty"
+      }
+    ],
+    "expected": null,
+    "category": "arbitrary"
+  },
+  {
+    "id": "arbitrary-hello-reversed",
+    "kind": "choice",
+    "instructions": "Choose whichever option first comes to mind.",
+    "context": "There is no factual reason to prefer either option.",
+    "options": [
+      {
+        "id": "kitty",
+        "description": "Kitty"
+      },
+      {
+        "id": "hello",
+        "description": "Hello"
+      }
+    ],
+    "expected": null,
+    "category": "arbitrary"
+  },
+  {
+    "id": "arbitrary-color",
+    "kind": "choice",
+    "instructions": "Choose whichever option first comes to mind.",
+    "context": "There is no factual reason to prefer either option.",
+    "options": [
+      {
+        "id": "red",
+        "description": "Red"
+      },
+      {
+        "id": "blue",
+        "description": "Blue"
+      }
+    ],
+    "expected": null,
+    "category": "arbitrary"
+  },
+  {
+    "id": "arbitrary-color-reversed",
+    "kind": "choice",
+    "instructions": "Choose whichever option first comes to mind.",
+    "context": "There is no factual reason to prefer either option.",
+    "options": [
+      {
+        "id": "blue",
+        "description": "Blue"
+      },
+      {
+        "id": "red",
+        "description": "Red"
+      }
+    ],
+    "expected": null,
+    "category": "arbitrary"
+  },
+  {
+    "id": "unknown-birthplace",
+    "kind": "choice",
+    "instructions": "Choose only an answer supported by the supplied evidence.",
+    "context": "No birthplace information is available.",
+    "options": [
+      {
+        "id": "london",
+        "description": "London"
+      },
+      {
+        "id": "paris",
+        "description": "Paris"
+      },
+      {
+        "id": "unknown",
+        "description": "Cannot determine from the text"
+      }
+    ],
+    "expected": "unknown",
+    "category": "missing-evidence"
+  },
+  {
+    "id": "unknown-coin",
+    "kind": "choice",
+    "instructions": "Choose only an answer supported by the supplied evidence.",
+    "context": "A fair coin has not been tossed yet.",
+    "options": [
+      {
+        "id": "heads",
+        "description": "Heads"
+      },
+      {
+        "id": "tails",
+        "description": "Tails"
+      },
+      {
+        "id": "unknown",
+        "description": "Cannot determine from the text"
+      }
+    ],
+    "expected": "unknown",
+    "category": "missing-evidence"
+  },
+  {
+    "id": "engine-delivered",
+    "kind": "noul",
+    "instructions": "The shipment has been delivered.",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "false",
+        "description": "false: no, the statement does not hold"
+      },
+      {
+        "id": "true",
+        "description": "true: yes, the statement holds"
+      }
+    ],
+    "expected": "true",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-pending",
+    "kind": "noul",
+    "instructions": "The shipment has been delivered.",
+    "context": "The shipment is still pending.",
+    "options": [
+      {
+        "id": "false",
+        "description": "false: no, the statement does not hold"
+      },
+      {
+        "id": "true",
+        "description": "true: yes, the statement holds"
+      }
+    ],
+    "expected": "false",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-refund",
+    "kind": "noul",
+    "instructions": "The customer requests a refund.",
+    "context": "The customer asks for a refund.",
+    "options": [
+      {
+        "id": "false",
+        "description": "false: no, the statement does not hold"
+      },
+      {
+        "id": "true",
+        "description": "true: yes, the statement holds"
+      }
+    ],
+    "expected": "true",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-no-refund",
+    "kind": "noul",
+    "instructions": "The customer requests a refund.",
+    "context": "The customer thanks us and wants to keep the product.",
+    "options": [
+      {
+        "id": "false",
+        "description": "false: no, the statement does not hold"
+      },
+      {
+        "id": "true",
+        "description": "true: yes, the statement holds"
+      }
+    ],
+    "expected": "false",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-star",
+    "kind": "choice",
+    "instructions": "Choose the item that is a star.",
+    "context": "Select using ordinary factual knowledge.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Hello"
+      },
+      {
+        "id": "1",
+        "description": "Sun"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-star-reversed",
+    "kind": "choice",
+    "instructions": "Choose the item that is a star.",
+    "context": "Select using ordinary factual knowledge.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Sun"
+      },
+      {
+        "id": "1",
+        "description": "Hello"
+      }
+    ],
+    "expected": "0",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-cool",
+    "kind": "choice",
+    "instructions": "Choose the cool color.",
+    "context": "Blue is cool. Red is warm.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Red"
+      },
+      {
+        "id": "1",
+        "description": "Blue"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-cool-reversed",
+    "kind": "choice",
+    "instructions": "Choose the cool color.",
+    "context": "Blue is cool. Red is warm.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Blue"
+      },
+      {
+        "id": "1",
+        "description": "Red"
+      }
+    ],
+    "expected": "0",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-shipment",
+    "kind": "choice",
+    "instructions": "Choose the shipment status supported by the text.",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Pending"
+      },
+      {
+        "id": "1",
+        "description": "Delivered"
+      },
+      {
+        "id": "2",
+        "description": "Lost"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-shipment-reversed",
+    "kind": "choice",
+    "instructions": "Choose the shipment status supported by the text.",
+    "context": "The shipment was delivered today.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Lost"
+      },
+      {
+        "id": "1",
+        "description": "Delivered"
+      },
+      {
+        "id": "2",
+        "description": "Pending"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-sentiment",
+    "kind": "choice",
+    "instructions": "Classify the review sentiment.",
+    "context": "I absolutely love this product.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Negative review"
+      },
+      {
+        "id": "1",
+        "description": "Positive review"
+      },
+      {
+        "id": "2",
+        "description": "Neutral review"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-sentiment-reversed",
+    "kind": "choice",
+    "instructions": "Classify the review sentiment.",
+    "context": "I absolutely love this product.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Neutral review"
+      },
+      {
+        "id": "1",
+        "description": "Positive review"
+      },
+      {
+        "id": "2",
+        "description": "Negative review"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-support",
+    "kind": "choice",
+    "instructions": "Route the support message to the correct department.",
+    "context": "I was charged twice for the same order.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Technical support"
+      },
+      {
+        "id": "1",
+        "description": "Billing"
+      },
+      {
+        "id": "2",
+        "description": "Shipping"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-support-reversed",
+    "kind": "choice",
+    "instructions": "Route the support message to the correct department.",
+    "context": "I was charged twice for the same order.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Shipping"
+      },
+      {
+        "id": "1",
+        "description": "Billing"
+      },
+      {
+        "id": "2",
+        "description": "Technical support"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-animal",
+    "kind": "choice",
+    "instructions": "Choose the animal mentioned in the text.",
+    "context": "A cat is sleeping on the sofa.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Dog"
+      },
+      {
+        "id": "1",
+        "description": "Cat"
+      },
+      {
+        "id": "2",
+        "description": "Bird"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  },
+  {
+    "id": "engine-animal-reversed",
+    "kind": "choice",
+    "instructions": "Choose the animal mentioned in the text.",
+    "context": "A cat is sleeping on the sofa.",
+    "options": [
+      {
+        "id": "0",
+        "description": "Bird"
+      },
+      {
+        "id": "1",
+        "description": "Cat"
+      },
+      {
+        "id": "2",
+        "description": "Dog"
+      }
+    ],
+    "expected": "1",
+    "category": "grounded"
+  }
+]

@@ -1,0 +1,3469 @@
+[
+  {
+    "prompt": {
+      "id": "delivered",
+      "kind": "noul",
+      "instructions": "Is the shipment delivered?",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "false",
+          "description": "No, the statement is false."
+        },
+        {
+          "id": "true",
+          "description": "Yes, the statement is true."
+        }
+      ],
+      "expected": "true",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      273,
+      268,
+      262,
+      12924,
+      2621,
+      302,
+      128010,
+      3770,
+      294,
+      585,
+      261,
+      262,
+      1548,
+      269,
+      3770,
+      260,
+      128010,
+      980,
+      294,
+      1595,
+      261,
+      262,
+      1548,
+      269,
+      980,
+      260,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      31,
+      33
+    ],
+    "logits": [
+      -4.046108722686768,
+      2.832559108734131
+    ],
+    "probabilities": [
+      0.0010284558087913255,
+      0.9989715441912087
+    ],
+    "coreMLProbabilities": [
+      0.0011234320217783564,
+      0.9988765679782217
+    ]
+  },
+  {
+    "prompt": {
+      "id": "pending",
+      "kind": "noul",
+      "instructions": "Is the shipment delivered?",
+      "context": "The shipment is still pending.",
+      "options": [
+        {
+          "id": "false",
+          "description": "No, the statement is false."
+        },
+        {
+          "id": "true",
+          "description": "Yes, the statement is true."
+        }
+      ],
+      "expected": "false",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      273,
+      268,
+      262,
+      12924,
+      2621,
+      302,
+      128010,
+      3770,
+      294,
+      585,
+      261,
+      262,
+      1548,
+      269,
+      3770,
+      260,
+      128010,
+      980,
+      294,
+      1595,
+      261,
+      262,
+      1548,
+      269,
+      980,
+      260,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      269,
+      449,
+      8555,
+      323
+    ],
+    "markerPositions": [
+      31,
+      33
+    ],
+    "logits": [
+      -2.3727078437805176,
+      -0.8459011316299438
+    ],
+    "probabilities": [
+      0.1784613824218345,
+      0.8215386175781655
+    ],
+    "coreMLProbabilities": [
+      0.1852863819576781,
+      0.8147136180423219
+    ]
+  },
+  {
+    "prompt": {
+      "id": "refund",
+      "kind": "noul",
+      "instructions": "Does the customer request a refund?",
+      "context": "The customer asks for a refund.",
+      "options": [
+        {
+          "id": "false",
+          "description": "No, the statement is false."
+        },
+        {
+          "id": "true",
+          "description": "Yes, the statement is true."
+        }
+      ],
+      "expected": "true",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      2467,
+      262,
+      1099,
+      1409,
+      266,
+      6257,
+      302,
+      128010,
+      3770,
+      294,
+      585,
+      261,
+      262,
+      1548,
+      269,
+      3770,
+      260,
+      128010,
+      980,
+      294,
+      1595,
+      261,
+      262,
+      1548,
+      269,
+      980,
+      260,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      1099,
+      5387,
+      270,
+      266,
+      6257,
+      323
+    ],
+    "markerPositions": [
+      32,
+      34
+    ],
+    "logits": [
+      -4.285335540771484,
+      3.4192700386047363
+    ],
+    "probabilities": [
+      0.0004505433657073679,
+      0.9995494566342926
+    ],
+    "coreMLProbabilities": [
+      0.000509238045837632,
+      0.9994907619541624
+    ]
+  },
+  {
+    "prompt": {
+      "id": "no-refund",
+      "kind": "noul",
+      "instructions": "Does the customer request a refund?",
+      "context": "The customer thanks us and wants to keep the product.",
+      "options": [
+        {
+          "id": "false",
+          "description": "No, the statement is false."
+        },
+        {
+          "id": "true",
+          "description": "Yes, the statement is true."
+        }
+      ],
+      "expected": "false",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      2467,
+      262,
+      1099,
+      1409,
+      266,
+      6257,
+      302,
+      128010,
+      3770,
+      294,
+      585,
+      261,
+      262,
+      1548,
+      269,
+      3770,
+      260,
+      128010,
+      980,
+      294,
+      1595,
+      261,
+      262,
+      1548,
+      269,
+      980,
+      260,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      1099,
+      1644,
+      381,
+      263,
+      1654,
+      264,
+      548,
+      262,
+      714,
+      323
+    ],
+    "markerPositions": [
+      32,
+      34
+    ],
+    "logits": [
+      -4.171670913696289,
+      3.7430946826934814
+    ],
+    "probabilities": [
+      0.0003651761057657548,
+      0.9996348238942342
+    ],
+    "coreMLProbabilities": [
+      0.00046062796871385476,
+      0.9995393720312862
+    ]
+  },
+  {
+    "prompt": {
+      "id": "star",
+      "kind": "choice",
+      "instructions": "Choose the item that is a star.",
+      "context": "Select using ordinary factual knowledge.",
+      "options": [
+        {
+          "id": "hello",
+          "description": "Hello"
+        },
+        {
+          "id": "sun",
+          "description": "Sun"
+        }
+      ],
+      "expected": "sun",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1905,
+      272,
+      269,
+      266,
+      2041,
+      260,
+      128010,
+      12018,
+      294,
+      5365,
+      128010,
+      2119,
+      294,
+      3041,
+      287,
+      128007,
+      12018,
+      128007,
+      2119,
+      1263,
+      1263,
+      128002,
+      1971,
+      478,
+      5111,
+      18875,
+      1118,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -5.7923264503479,
+      -4.351992607116699
+    ],
+    "probabilities": [
+      0.19149365634837145,
+      0.8085063436516285
+    ],
+    "coreMLProbabilities": [
+      0.18294112942745455,
+      0.8170588705725456
+    ]
+  },
+  {
+    "prompt": {
+      "id": "star-reversed",
+      "kind": "choice",
+      "instructions": "Choose the item that is a star.",
+      "context": "Select using ordinary factual knowledge.",
+      "options": [
+        {
+          "id": "sun",
+          "description": "Sun"
+        },
+        {
+          "id": "hello",
+          "description": "Hello"
+        }
+      ],
+      "expected": "sun",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1905,
+      272,
+      269,
+      266,
+      2041,
+      260,
+      128010,
+      2119,
+      294,
+      3041,
+      128010,
+      12018,
+      294,
+      5365,
+      287,
+      128007,
+      2119,
+      128007,
+      12018,
+      1263,
+      1263,
+      128002,
+      1971,
+      478,
+      5111,
+      18875,
+      1118,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -5.014894008636475,
+      -5.099119663238525
+    ],
+    "probabilities": [
+      0.5210439746933369,
+      0.47895602530666315
+    ],
+    "coreMLProbabilities": [
+      0.5080132775222339,
+      0.4919867224777661
+    ]
+  },
+  {
+    "prompt": {
+      "id": "cool",
+      "kind": "choice",
+      "instructions": "Choose the cool color.",
+      "context": "Blue is cool. Red is warm.",
+      "options": [
+        {
+          "id": "red",
+          "description": "Red"
+        },
+        {
+          "id": "blue",
+          "description": "Blue"
+        }
+      ],
+      "expected": "blue",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1570,
+      1163,
+      260,
+      128010,
+      1267,
+      294,
+      1813,
+      128010,
+      1707,
+      294,
+      2465,
+      287,
+      128007,
+      1267,
+      128007,
+      1707,
+      1263,
+      1263,
+      128002,
+      1707,
+      269,
+      1570,
+      323,
+      1267,
+      269,
+      1926,
+      323
+    ],
+    "markerPositions": [
+      18,
+      20
+    ],
+    "logits": [
+      -1.0913985967636108,
+      2.105668544769287
+    ],
+    "probabilities": [
+      0.039276240741577685,
+      0.9607237592584223
+    ],
+    "coreMLProbabilities": [
+      0.042296222509885656,
+      0.9577037774901143
+    ]
+  },
+  {
+    "prompt": {
+      "id": "cool-reversed",
+      "kind": "choice",
+      "instructions": "Choose the cool color.",
+      "context": "Blue is cool. Red is warm.",
+      "options": [
+        {
+          "id": "blue",
+          "description": "Blue"
+        },
+        {
+          "id": "red",
+          "description": "Red"
+        }
+      ],
+      "expected": "blue",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1570,
+      1163,
+      260,
+      128010,
+      1707,
+      294,
+      2465,
+      128010,
+      1267,
+      294,
+      1813,
+      287,
+      128007,
+      1707,
+      128007,
+      1267,
+      1263,
+      1263,
+      128002,
+      1707,
+      269,
+      1570,
+      323,
+      1267,
+      269,
+      1926,
+      323
+    ],
+    "markerPositions": [
+      18,
+      20
+    ],
+    "logits": [
+      2.177901268005371,
+      -0.9020510911941528
+    ],
+    "probabilities": [
+      0.9560581832128414,
+      0.04394181678715863
+    ],
+    "coreMLProbabilities": [
+      0.9461329243478827,
+      0.05386707565211739
+    ]
+  },
+  {
+    "prompt": {
+      "id": "shipment",
+      "kind": "choice",
+      "instructions": "Choose the shipment status supported by the text.",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "pending",
+          "description": "Pending"
+        },
+        {
+          "id": "delivered",
+          "description": "Delivered"
+        },
+        {
+          "id": "lost",
+          "description": "Lost"
+        }
+      ],
+      "expected": "delivered",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      12924,
+      1980,
+      2560,
+      293,
+      262,
+      1529,
+      260,
+      128010,
+      8555,
+      294,
+      55780,
+      128010,
+      2621,
+      294,
+      41366,
+      128010,
+      1125,
+      294,
+      9658,
+      287,
+      128007,
+      8555,
+      128007,
+      2621,
+      128007,
+      1125,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -3.992007255554199,
+      3.0671005249023438,
+      -4.067995548248291
+    ],
+    "probabilities": [
+      0.0008581234356954024,
+      0.9983465445457329,
+      0.0007953320185716526
+    ],
+    "coreMLProbabilities": [
+      0.0007615998965468315,
+      0.9985231598135391,
+      0.0007152402899140576
+    ]
+  },
+  {
+    "prompt": {
+      "id": "shipment-reversed",
+      "kind": "choice",
+      "instructions": "Choose the shipment status supported by the text.",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "lost",
+          "description": "Lost"
+        },
+        {
+          "id": "delivered",
+          "description": "Delivered"
+        },
+        {
+          "id": "pending",
+          "description": "Pending"
+        }
+      ],
+      "expected": "delivered",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      12924,
+      1980,
+      2560,
+      293,
+      262,
+      1529,
+      260,
+      128010,
+      1125,
+      294,
+      9658,
+      128010,
+      2621,
+      294,
+      41366,
+      128010,
+      8555,
+      294,
+      55780,
+      287,
+      128007,
+      1125,
+      128007,
+      2621,
+      128007,
+      8555,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -3.9878153800964355,
+      3.2211103439331055,
+      -3.9979023933410645
+    ],
+    "probabilities": [
+      0.0007388636812040368,
+      0.9985296881025082,
+      0.0007314482162876889
+    ],
+    "coreMLProbabilities": [
+      0.0007121641405170846,
+      0.998567911626713,
+      0.0007199242327698816
+    ]
+  },
+  {
+    "prompt": {
+      "id": "sentiment",
+      "kind": "choice",
+      "instructions": "Classify the review sentiment.",
+      "context": "I absolutely love this product.",
+      "options": [
+        {
+          "id": "negative",
+          "description": "Negative review"
+        },
+        {
+          "id": "positive",
+          "description": "Positive review"
+        },
+        {
+          "id": "neutral",
+          "description": "Neutral review"
+        }
+      ],
+      "expected": "positive",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      3854,
+      12336,
+      262,
+      1078,
+      9481,
+      260,
+      128010,
+      2330,
+      294,
+      24976,
+      1078,
+      128010,
+      1453,
+      294,
+      16237,
+      1078,
+      128010,
+      5678,
+      294,
+      32168,
+      1078,
+      287,
+      128007,
+      2330,
+      128007,
+      1453,
+      128007,
+      5678,
+      1263,
+      1263,
+      128002,
+      584,
+      2170,
+      472,
+      291,
+      714,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -6.260183334350586,
+      4.177319526672363,
+      -5.742124080657959
+    ],
+    "probabilities": [
+      2.931001244089012e-05,
+      0.9999214853227166,
+      4.920466484242951e-05
+    ],
+    "coreMLProbabilities": [
+      3.409852961069823e-05,
+      0.9999099006348993,
+      5.600083548999645e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "sentiment-reversed",
+      "kind": "choice",
+      "instructions": "Classify the review sentiment.",
+      "context": "I absolutely love this product.",
+      "options": [
+        {
+          "id": "neutral",
+          "description": "Neutral review"
+        },
+        {
+          "id": "positive",
+          "description": "Positive review"
+        },
+        {
+          "id": "negative",
+          "description": "Negative review"
+        }
+      ],
+      "expected": "positive",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      3854,
+      12336,
+      262,
+      1078,
+      9481,
+      260,
+      128010,
+      5678,
+      294,
+      32168,
+      1078,
+      128010,
+      1453,
+      294,
+      16237,
+      1078,
+      128010,
+      2330,
+      294,
+      24976,
+      1078,
+      287,
+      128007,
+      5678,
+      128007,
+      1453,
+      128007,
+      2330,
+      1263,
+      1263,
+      128002,
+      584,
+      2170,
+      472,
+      291,
+      714,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -5.865751266479492,
+      4.1397385597229,
+      -5.87986946105957
+    ],
+    "probabilities": [
+      4.514732657365673e-05,
+      0.9999103382672345,
+      4.451440619182462e-05
+    ],
+    "coreMLProbabilities": [
+      5.064485625234271e-05,
+      0.9998963282586567,
+      5.30268850908318e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "support",
+      "kind": "choice",
+      "instructions": "Route the support message to the correct department.",
+      "context": "I was charged twice for the same order.",
+      "options": [
+        {
+          "id": "technical",
+          "description": "Technical support"
+        },
+        {
+          "id": "billing",
+          "description": "Billing"
+        },
+        {
+          "id": "shipping",
+          "description": "Shipping"
+        }
+      ],
+      "expected": "billing",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      9343,
+      262,
+      523,
+      1424,
+      264,
+      262,
+      1988,
+      2307,
+      260,
+      128010,
+      2064,
+      294,
+      7141,
+      523,
+      128010,
+      9833,
+      294,
+      33439,
+      128010,
+      2741,
+      294,
+      7749,
+      287,
+      128007,
+      2064,
+      128007,
+      9833,
+      128007,
+      2741,
+      1263,
+      1263,
+      128002,
+      584,
+      284,
+      2824,
+      2736,
+      270,
+      262,
+      454,
+      556,
+      323
+    ],
+    "markerPositions": [
+      27,
+      29,
+      31
+    ],
+    "logits": [
+      -6.986391067504883,
+      3.177112579345703,
+      -2.329930305480957
+    ],
+    "probabilities": [
+      3.8394669607288866e-05,
+      0.9959200721475281,
+      0.004041533182864706
+    ],
+    "coreMLProbabilities": [
+      4.914113003540422e-05,
+      0.9940037832691541,
+      0.00594707560081073
+    ]
+  },
+  {
+    "prompt": {
+      "id": "support-reversed",
+      "kind": "choice",
+      "instructions": "Route the support message to the correct department.",
+      "context": "I was charged twice for the same order.",
+      "options": [
+        {
+          "id": "shipping",
+          "description": "Shipping"
+        },
+        {
+          "id": "billing",
+          "description": "Billing"
+        },
+        {
+          "id": "technical",
+          "description": "Technical support"
+        }
+      ],
+      "expected": "billing",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      9343,
+      262,
+      523,
+      1424,
+      264,
+      262,
+      1988,
+      2307,
+      260,
+      128010,
+      2741,
+      294,
+      7749,
+      128010,
+      9833,
+      294,
+      33439,
+      128010,
+      2064,
+      294,
+      7141,
+      523,
+      287,
+      128007,
+      2741,
+      128007,
+      9833,
+      128007,
+      2064,
+      1263,
+      1263,
+      128002,
+      584,
+      284,
+      2824,
+      2736,
+      270,
+      262,
+      454,
+      556,
+      323
+    ],
+    "markerPositions": [
+      27,
+      29,
+      31
+    ],
+    "logits": [
+      -2.444467067718506,
+      2.866781234741211,
+      -6.9903669357299805
+    ],
+    "probabilities": [
+      0.004911263511418748,
+      0.9950366249364591,
+      5.2111552122192715e-05
+    ],
+    "coreMLProbabilities": [
+      0.006163928711117723,
+      0.9937703634670859,
+      6.570782179622538e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "animal",
+      "kind": "choice",
+      "instructions": "Choose the animal mentioned in the text.",
+      "context": "A cat is sleeping on the sofa.",
+      "options": [
+        {
+          "id": "dog",
+          "description": "Dog"
+        },
+        {
+          "id": "cat",
+          "description": "Cat"
+        },
+        {
+          "id": "bird",
+          "description": "Bird"
+        }
+      ],
+      "expected": "cat",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      2545,
+      1979,
+      267,
+      262,
+      1529,
+      260,
+      128010,
+      1560,
+      294,
+      5763,
+      128010,
+      3185,
+      294,
+      6062,
+      128010,
+      4523,
+      294,
+      8687,
+      287,
+      128007,
+      1560,
+      128007,
+      3185,
+      128007,
+      4523,
+      1263,
+      1263,
+      128002,
+      266,
+      3185,
+      269,
+      4869,
+      277,
+      262,
+      5335,
+      323
+    ],
+    "markerPositions": [
+      25,
+      27,
+      29
+    ],
+    "logits": [
+      -7.022263050079346,
+      4.013542175292969,
+      -5.661706447601318
+    ],
+    "probabilities": [
+      1.6113000041408042e-05,
+      0.9999210726842499,
+      6.28143157086081e-05
+    ],
+    "coreMLProbabilities": [
+      2.2401757096090303e-05,
+      0.9998902420419958,
+      8.73562009079999e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "animal-reversed",
+      "kind": "choice",
+      "instructions": "Choose the animal mentioned in the text.",
+      "context": "A cat is sleeping on the sofa.",
+      "options": [
+        {
+          "id": "bird",
+          "description": "Bird"
+        },
+        {
+          "id": "cat",
+          "description": "Cat"
+        },
+        {
+          "id": "dog",
+          "description": "Dog"
+        }
+      ],
+      "expected": "cat",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      2545,
+      1979,
+      267,
+      262,
+      1529,
+      260,
+      128010,
+      4523,
+      294,
+      8687,
+      128010,
+      3185,
+      294,
+      6062,
+      128010,
+      1560,
+      294,
+      5763,
+      287,
+      128007,
+      4523,
+      128007,
+      3185,
+      128007,
+      1560,
+      1263,
+      1263,
+      128002,
+      266,
+      3185,
+      269,
+      4869,
+      277,
+      262,
+      5335,
+      323
+    ],
+    "markerPositions": [
+      25,
+      27,
+      29
+    ],
+    "logits": [
+      -6.865333080291748,
+      3.9304089546203613,
+      -6.003133773803711
+    ],
+    "probabilities": [
+      2.0485135371179484e-05,
+      0.999930998613057,
+      4.8516251571924555e-05
+    ],
+    "coreMLProbabilities": [
+      2.5166170279703247e-05,
+      0.999897975245431,
+      7.685858428928047e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "severity-low",
+      "kind": "score",
+      "instructions": "Rate the incident severity using the supplied rubric.",
+      "context": "The issue is cosmetic and causes no loss of functionality.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Low: cosmetic issue only"
+        },
+        {
+          "id": "1",
+          "description": "Medium: partial loss of functionality"
+        },
+        {
+          "id": "2",
+          "description": "High: complete service outage"
+        }
+      ],
+      "expected": "0",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      10746,
+      262,
+      3273,
+      12079,
+      478,
+      262,
+      5692,
+      39633,
+      260,
+      128010,
+      767,
+      294,
+      4959,
+      294,
+      9703,
+      889,
+      364,
+      128010,
+      376,
+      294,
+      11454,
+      294,
+      7245,
+      1265,
+      265,
+      4792,
+      128010,
+      392,
+      294,
+      1418,
+      294,
+      850,
+      506,
+      25292,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      262,
+      889,
+      269,
+      9703,
+      263,
+      2884,
+      363,
+      1265,
+      265,
+      4792,
+      323
+    ],
+    "markerPositions": [
+      39,
+      41,
+      43
+    ],
+    "logits": [
+      2.4338841438293457,
+      -1.80442214012146,
+      -4.17274808883667
+    ],
+    "probabilities": [
+      0.984461854121331,
+      0.014207768136983063,
+      0.0013303777416859323
+    ],
+    "coreMLProbabilities": [
+      0.9771971566596679,
+      0.02092703832390925,
+      0.0018758050164227897
+    ]
+  },
+  {
+    "prompt": {
+      "id": "severity-medium",
+      "kind": "score",
+      "instructions": "Rate the incident severity using the supplied rubric.",
+      "context": "One optional feature is unavailable; the main workflow still works.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Low: cosmetic issue only"
+        },
+        {
+          "id": "1",
+          "description": "Medium: partial loss of functionality"
+        },
+        {
+          "id": "2",
+          "description": "High: complete service outage"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      10746,
+      262,
+      3273,
+      12079,
+      478,
+      262,
+      5692,
+      39633,
+      260,
+      128010,
+      767,
+      294,
+      4959,
+      294,
+      9703,
+      889,
+      364,
+      128010,
+      376,
+      294,
+      11454,
+      294,
+      7245,
+      1265,
+      265,
+      4792,
+      128010,
+      392,
+      294,
+      1418,
+      294,
+      850,
+      506,
+      25292,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      311,
+      6862,
+      1389,
+      269,
+      12734,
+      2600,
+      262,
+      872,
+      11715,
+      449,
+      885,
+      323
+    ],
+    "markerPositions": [
+      39,
+      41,
+      43
+    ],
+    "logits": [
+      -1.1069059371948242,
+      0.23665185272693634,
+      -1.9111567735671997
+    ],
+    "probabilities": [
+      0.18939113966583723,
+      0.7258709095751489,
+      0.08473795075901393
+    ],
+    "coreMLProbabilities": [
+      0.1780407035102496,
+      0.7343335879481457,
+      0.0876257085416045
+    ]
+  },
+  {
+    "prompt": {
+      "id": "severity-high",
+      "kind": "score",
+      "instructions": "Rate the incident severity using the supplied rubric.",
+      "context": "All customers are locked out of the service.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Low: cosmetic issue only"
+        },
+        {
+          "id": "1",
+          "description": "Medium: partial loss of functionality"
+        },
+        {
+          "id": "2",
+          "description": "High: complete service outage"
+        }
+      ],
+      "expected": "2",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      10746,
+      262,
+      3273,
+      12079,
+      478,
+      262,
+      5692,
+      39633,
+      260,
+      128010,
+      767,
+      294,
+      4959,
+      294,
+      9703,
+      889,
+      364,
+      128010,
+      376,
+      294,
+      11454,
+      294,
+      7245,
+      1265,
+      265,
+      4792,
+      128010,
+      392,
+      294,
+      1418,
+      294,
+      850,
+      506,
+      25292,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      305,
+      887,
+      281,
+      5800,
+      321,
+      265,
+      262,
+      506,
+      323
+    ],
+    "markerPositions": [
+      39,
+      41,
+      43
+    ],
+    "logits": [
+      -4.850857734680176,
+      -2.3837883472442627,
+      3.422186851501465
+    ],
+    "probabilities": [
+      0.0002544759835906079,
+      0.002999724865494426,
+      0.9967457991509149
+    ],
+    "coreMLProbabilities": [
+      0.0004423445813025124,
+      0.0044452226866169625,
+      0.9951124327320806
+    ]
+  },
+  {
+    "prompt": {
+      "id": "arbitrary-hello",
+      "kind": "choice",
+      "instructions": "Choose whichever option first comes to mind.",
+      "context": "There is no factual reason to prefer either option.",
+      "options": [
+        {
+          "id": "hello",
+          "description": "Hello"
+        },
+        {
+          "id": "kitty",
+          "description": "Kitty"
+        }
+      ],
+      "expected": null,
+      "category": "arbitrary"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      16490,
+      1209,
+      362,
+      699,
+      264,
+      791,
+      260,
+      128010,
+      12018,
+      294,
+      5365,
+      128010,
+      21824,
+      294,
+      19603,
+      287,
+      128007,
+      12018,
+      128007,
+      21824,
+      1263,
+      1263,
+      128002,
+      343,
+      269,
+      363,
+      18875,
+      919,
+      264,
+      2829,
+      814,
+      1209,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -5.27362060546875,
+      -5.645452499389648
+    ],
+    "probabilities": [
+      0.5919015543136497,
+      0.4080984456863503
+    ],
+    "coreMLProbabilities": [
+      0.6508264609250084,
+      0.34917353907499166
+    ]
+  },
+  {
+    "prompt": {
+      "id": "arbitrary-hello-reversed",
+      "kind": "choice",
+      "instructions": "Choose whichever option first comes to mind.",
+      "context": "There is no factual reason to prefer either option.",
+      "options": [
+        {
+          "id": "kitty",
+          "description": "Kitty"
+        },
+        {
+          "id": "hello",
+          "description": "Hello"
+        }
+      ],
+      "expected": null,
+      "category": "arbitrary"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      16490,
+      1209,
+      362,
+      699,
+      264,
+      791,
+      260,
+      128010,
+      21824,
+      294,
+      19603,
+      128010,
+      12018,
+      294,
+      5365,
+      287,
+      128007,
+      21824,
+      128007,
+      12018,
+      1263,
+      1263,
+      128002,
+      343,
+      269,
+      363,
+      18875,
+      919,
+      264,
+      2829,
+      814,
+      1209,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -6.363129615783691,
+      -4.637423515319824
+    ],
+    "probabilities": [
+      0.15113764099486218,
+      0.8488623590051377
+    ],
+    "coreMLProbabilities": [
+      0.13233618006676112,
+      0.8676638199332388
+    ]
+  },
+  {
+    "prompt": {
+      "id": "arbitrary-color",
+      "kind": "choice",
+      "instructions": "Choose whichever option first comes to mind.",
+      "context": "There is no factual reason to prefer either option.",
+      "options": [
+        {
+          "id": "red",
+          "description": "Red"
+        },
+        {
+          "id": "blue",
+          "description": "Blue"
+        }
+      ],
+      "expected": null,
+      "category": "arbitrary"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      16490,
+      1209,
+      362,
+      699,
+      264,
+      791,
+      260,
+      128010,
+      1267,
+      294,
+      1813,
+      128010,
+      1707,
+      294,
+      2465,
+      287,
+      128007,
+      1267,
+      128007,
+      1707,
+      1263,
+      1263,
+      128002,
+      343,
+      269,
+      363,
+      18875,
+      919,
+      264,
+      2829,
+      814,
+      1209,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -3.85355806350708,
+      -2.8072876930236816
+    ],
+    "probabilities": [
+      0.2599419349425655,
+      0.7400580650574344
+    ],
+    "coreMLProbabilities": [
+      0.2486661020111782,
+      0.7513338979888219
+    ]
+  },
+  {
+    "prompt": {
+      "id": "arbitrary-color-reversed",
+      "kind": "choice",
+      "instructions": "Choose whichever option first comes to mind.",
+      "context": "There is no factual reason to prefer either option.",
+      "options": [
+        {
+          "id": "blue",
+          "description": "Blue"
+        },
+        {
+          "id": "red",
+          "description": "Red"
+        }
+      ],
+      "expected": null,
+      "category": "arbitrary"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      16490,
+      1209,
+      362,
+      699,
+      264,
+      791,
+      260,
+      128010,
+      1707,
+      294,
+      2465,
+      128010,
+      1267,
+      294,
+      1813,
+      287,
+      128007,
+      1707,
+      128007,
+      1267,
+      1263,
+      1263,
+      128002,
+      343,
+      269,
+      363,
+      18875,
+      919,
+      264,
+      2829,
+      814,
+      1209,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -2.9993369579315186,
+      -3.4089298248291016
+    ],
+    "probabilities": [
+      0.6009902519513162,
+      0.3990097480486838
+    ],
+    "coreMLProbabilities": [
+      0.6304963665747719,
+      0.369503633425228
+    ]
+  },
+  {
+    "prompt": {
+      "id": "unknown-birthplace",
+      "kind": "choice",
+      "instructions": "Choose only an answer supported by the supplied evidence.",
+      "context": "No birthplace information is available.",
+      "options": [
+        {
+          "id": "london",
+          "description": "London"
+        },
+        {
+          "id": "paris",
+          "description": "Paris"
+        },
+        {
+          "id": "unknown",
+          "description": "Cannot determine from the text"
+        }
+      ],
+      "expected": "unknown",
+      "category": "missing-evidence"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      364,
+      299,
+      1330,
+      2560,
+      293,
+      262,
+      5692,
+      1519,
+      260,
+      128010,
+      27947,
+      294,
+      1336,
+      128010,
+      47136,
+      294,
+      3045,
+      128010,
+      4175,
+      294,
+      24872,
+      2003,
+      292,
+      262,
+      1529,
+      287,
+      128007,
+      27947,
+      128007,
+      47136,
+      128007,
+      4175,
+      1263,
+      1263,
+      128002,
+      363,
+      27840,
+      439,
+      269,
+      499,
+      323
+    ],
+    "markerPositions": [
+      31,
+      33,
+      35
+    ],
+    "logits": [
+      -2.9495348930358887,
+      -3.806999921798706,
+      2.1969618797302246
+    ],
+    "probabilities": [
+      0.005771915266117082,
+      0.002448655092218374,
+      0.9917794296416645
+    ],
+    "coreMLProbabilities": [
+      0.008097004699914628,
+      0.004092016777670922,
+      0.9878109785224145
+    ]
+  },
+  {
+    "prompt": {
+      "id": "unknown-coin",
+      "kind": "choice",
+      "instructions": "Choose only an answer supported by the supplied evidence.",
+      "context": "A fair coin has not been tossed yet.",
+      "options": [
+        {
+          "id": "heads",
+          "description": "Heads"
+        },
+        {
+          "id": "tails",
+          "description": "Tails"
+        },
+        {
+          "id": "unknown",
+          "description": "Cannot determine from the text"
+        }
+      ],
+      "expected": "unknown",
+      "category": "missing-evidence"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      364,
+      299,
+      1330,
+      2560,
+      293,
+      262,
+      5692,
+      1519,
+      260,
+      128010,
+      3952,
+      294,
+      24239,
+      128010,
+      23773,
+      294,
+      61896,
+      128010,
+      4175,
+      294,
+      24872,
+      2003,
+      292,
+      262,
+      1529,
+      287,
+      128007,
+      3952,
+      128007,
+      23773,
+      128007,
+      4175,
+      1263,
+      1263,
+      128002,
+      266,
+      2335,
+      7496,
+      303,
+      298,
+      331,
+      13489,
+      729,
+      323
+    ],
+    "markerPositions": [
+      31,
+      33,
+      35
+    ],
+    "logits": [
+      2.315495729446411,
+      -2.5815820693969727,
+      -2.805285930633545
+    ],
+    "probabilities": [
+      0.9867385021237088,
+      0.007369333466422936,
+      0.005892164409868251
+    ],
+    "coreMLProbabilities": [
+      0.9854687057683963,
+      0.008094715982573886,
+      0.0064365782490298324
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-delivered",
+      "kind": "noul",
+      "instructions": "The shipment has been delivered.",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "false",
+          "description": "false: no, the statement does not hold"
+        },
+        {
+          "id": "true",
+          "description": "true: yes, the statement holds"
+        }
+      ],
+      "expected": "true",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      279,
+      12924,
+      303,
+      331,
+      2621,
+      260,
+      128010,
+      3770,
+      294,
+      3770,
+      294,
+      363,
+      261,
+      262,
+      1548,
+      490,
+      298,
+      1229,
+      128010,
+      980,
+      294,
+      980,
+      294,
+      2489,
+      261,
+      262,
+      1548,
+      3073,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      33,
+      35
+    ],
+    "logits": [
+      -4.920989036560059,
+      2.647613048553467
+    ],
+    "probabilities": [
+      0.0005161473012589815,
+      0.9994838526987411
+    ],
+    "coreMLProbabilities": [
+      0.0005966687797605901,
+      0.9994033312202394
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-pending",
+      "kind": "noul",
+      "instructions": "The shipment has been delivered.",
+      "context": "The shipment is still pending.",
+      "options": [
+        {
+          "id": "false",
+          "description": "false: no, the statement does not hold"
+        },
+        {
+          "id": "true",
+          "description": "true: yes, the statement holds"
+        }
+      ],
+      "expected": "false",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      279,
+      12924,
+      303,
+      331,
+      2621,
+      260,
+      128010,
+      3770,
+      294,
+      3770,
+      294,
+      363,
+      261,
+      262,
+      1548,
+      490,
+      298,
+      1229,
+      128010,
+      980,
+      294,
+      980,
+      294,
+      2489,
+      261,
+      262,
+      1548,
+      3073,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      269,
+      449,
+      8555,
+      323
+    ],
+    "markerPositions": [
+      33,
+      35
+    ],
+    "logits": [
+      -1.439511775970459,
+      -1.532938838005066
+    ],
+    "probabilities": [
+      0.5233397909719799,
+      0.47666020902802014
+    ],
+    "coreMLProbabilities": [
+      0.5331545233519495,
+      0.4668454766480505
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-refund",
+      "kind": "noul",
+      "instructions": "The customer requests a refund.",
+      "context": "The customer asks for a refund.",
+      "options": [
+        {
+          "id": "false",
+          "description": "false: no, the statement does not hold"
+        },
+        {
+          "id": "true",
+          "description": "true: yes, the statement holds"
+        }
+      ],
+      "expected": "true",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      279,
+      1099,
+      4115,
+      266,
+      6257,
+      260,
+      128010,
+      3770,
+      294,
+      3770,
+      294,
+      363,
+      261,
+      262,
+      1548,
+      490,
+      298,
+      1229,
+      128010,
+      980,
+      294,
+      980,
+      294,
+      2489,
+      261,
+      262,
+      1548,
+      3073,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      1099,
+      5387,
+      270,
+      266,
+      6257,
+      323
+    ],
+    "markerPositions": [
+      33,
+      35
+    ],
+    "logits": [
+      -4.556323528289795,
+      0.5164663791656494
+    ],
+    "probabilities": [
+      0.0062259123716761735,
+      0.9937740876283238
+    ],
+    "coreMLProbabilities": [
+      0.00886243163693074,
+      0.9911375683630692
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-no-refund",
+      "kind": "noul",
+      "instructions": "The customer requests a refund.",
+      "context": "The customer thanks us and wants to keep the product.",
+      "options": [
+        {
+          "id": "false",
+          "description": "false: no, the statement does not hold"
+        },
+        {
+          "id": "true",
+          "description": "true: yes, the statement holds"
+        }
+      ],
+      "expected": "false",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      279,
+      1099,
+      4115,
+      266,
+      6257,
+      260,
+      128010,
+      3770,
+      294,
+      3770,
+      294,
+      363,
+      261,
+      262,
+      1548,
+      490,
+      298,
+      1229,
+      128010,
+      980,
+      294,
+      980,
+      294,
+      2489,
+      261,
+      262,
+      1548,
+      3073,
+      287,
+      128007,
+      3770,
+      128007,
+      980,
+      1263,
+      1263,
+      128002,
+      262,
+      1099,
+      1644,
+      381,
+      263,
+      1654,
+      264,
+      548,
+      262,
+      714,
+      323
+    ],
+    "markerPositions": [
+      33,
+      35
+    ],
+    "logits": [
+      -3.371450901031494,
+      2.3407721519470215
+    ],
+    "probabilities": [
+      0.003294427352810726,
+      0.9967055726471893
+    ],
+    "coreMLProbabilities": [
+      0.005244599964401719,
+      0.9947554000355983
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-star",
+      "kind": "choice",
+      "instructions": "Choose the item that is a star.",
+      "context": "Select using ordinary factual knowledge.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Hello"
+        },
+        {
+          "id": "1",
+          "description": "Sun"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1905,
+      272,
+      269,
+      266,
+      2041,
+      260,
+      128010,
+      767,
+      294,
+      5365,
+      128010,
+      376,
+      294,
+      3041,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      1263,
+      1263,
+      128002,
+      1971,
+      478,
+      5111,
+      18875,
+      1118,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -3.926718235015869,
+      -2.496424674987793
+    ],
+    "probabilities": [
+      0.19305294830157776,
+      0.8069470516984222
+    ],
+    "coreMLProbabilities": [
+      0.19817458542627384,
+      0.8018254145737261
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-star-reversed",
+      "kind": "choice",
+      "instructions": "Choose the item that is a star.",
+      "context": "Select using ordinary factual knowledge.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Sun"
+        },
+        {
+          "id": "1",
+          "description": "Hello"
+        }
+      ],
+      "expected": "0",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1905,
+      272,
+      269,
+      266,
+      2041,
+      260,
+      128010,
+      767,
+      294,
+      3041,
+      128010,
+      376,
+      294,
+      5365,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      1263,
+      1263,
+      128002,
+      1971,
+      478,
+      5111,
+      18875,
+      1118,
+      323
+    ],
+    "markerPositions": [
+      21,
+      23
+    ],
+    "logits": [
+      -2.8685293197631836,
+      -3.3766112327575684
+    ],
+    "probabilities": [
+      0.62435672257055,
+      0.3756432774294501
+    ],
+    "coreMLProbabilities": [
+      0.6206016313465574,
+      0.37939836865344256
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-cool",
+      "kind": "choice",
+      "instructions": "Choose the cool color.",
+      "context": "Blue is cool. Red is warm.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Red"
+        },
+        {
+          "id": "1",
+          "description": "Blue"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1570,
+      1163,
+      260,
+      128010,
+      767,
+      294,
+      1813,
+      128010,
+      376,
+      294,
+      2465,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      1263,
+      1263,
+      128002,
+      1707,
+      269,
+      1570,
+      323,
+      1267,
+      269,
+      1926,
+      323
+    ],
+    "markerPositions": [
+      18,
+      20
+    ],
+    "logits": [
+      -1.427935004234314,
+      2.5087409019470215
+    ],
+    "probabilities": [
+      0.01913950148413108,
+      0.980860498515869
+    ],
+    "coreMLProbabilities": [
+      0.017997417065884792,
+      0.9820025829341152
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-cool-reversed",
+      "kind": "choice",
+      "instructions": "Choose the cool color.",
+      "context": "Blue is cool. Red is warm.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Blue"
+        },
+        {
+          "id": "1",
+          "description": "Red"
+        }
+      ],
+      "expected": "0",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      1570,
+      1163,
+      260,
+      128010,
+      767,
+      294,
+      2465,
+      128010,
+      376,
+      294,
+      1813,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      1263,
+      1263,
+      128002,
+      1707,
+      269,
+      1570,
+      323,
+      1267,
+      269,
+      1926,
+      323
+    ],
+    "markerPositions": [
+      18,
+      20
+    ],
+    "logits": [
+      1.190481424331665,
+      1.7126719951629639
+    ],
+    "probabilities": [
+      0.37234014779576863,
+      0.6276598522042314
+    ],
+    "coreMLProbabilities": [
+      0.36529342689778793,
+      0.634706573102212
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-shipment",
+      "kind": "choice",
+      "instructions": "Choose the shipment status supported by the text.",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Pending"
+        },
+        {
+          "id": "1",
+          "description": "Delivered"
+        },
+        {
+          "id": "2",
+          "description": "Lost"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      12924,
+      1980,
+      2560,
+      293,
+      262,
+      1529,
+      260,
+      128010,
+      767,
+      294,
+      55780,
+      128010,
+      376,
+      294,
+      41366,
+      128010,
+      392,
+      294,
+      9658,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -5.212270736694336,
+      3.9690871238708496,
+      -6.160783767700195
+    ],
+    "probabilities": [
+      0.00010292596015705042,
+      0.9998572091148147,
+      3.986492502827701e-05
+    ],
+    "coreMLProbabilities": [
+      0.00011252769233107896,
+      0.9998452096418464,
+      4.226266582231155e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-shipment-reversed",
+      "kind": "choice",
+      "instructions": "Choose the shipment status supported by the text.",
+      "context": "The shipment was delivered today.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Lost"
+        },
+        {
+          "id": "1",
+          "description": "Delivered"
+        },
+        {
+          "id": "2",
+          "description": "Pending"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      12924,
+      1980,
+      2560,
+      293,
+      262,
+      1529,
+      260,
+      128010,
+      767,
+      294,
+      9658,
+      128010,
+      376,
+      294,
+      41366,
+      128010,
+      392,
+      294,
+      55780,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      262,
+      12924,
+      284,
+      2621,
+      561,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -5.833944320678711,
+      4.146020889282227,
+      -6.032533168792725
+    ],
+    "probabilities": [
+      4.631477648846721e-05,
+      0.9999157123439687,
+      3.797287954276247e-05
+    ],
+    "coreMLProbabilities": [
+      4.811334474493181e-05,
+      0.9999087444948261,
+      4.314216042904442e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-sentiment",
+      "kind": "choice",
+      "instructions": "Classify the review sentiment.",
+      "context": "I absolutely love this product.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Negative review"
+        },
+        {
+          "id": "1",
+          "description": "Positive review"
+        },
+        {
+          "id": "2",
+          "description": "Neutral review"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      3854,
+      12336,
+      262,
+      1078,
+      9481,
+      260,
+      128010,
+      767,
+      294,
+      24976,
+      1078,
+      128010,
+      376,
+      294,
+      16237,
+      1078,
+      128010,
+      392,
+      294,
+      32168,
+      1078,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      584,
+      2170,
+      472,
+      291,
+      714,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -7.040056228637695,
+      4.69533634185791,
+      -6.740563869476318
+    ],
+    "probabilities": [
+      8.005262849210036e-06,
+      0.9999811942467486,
+      1.0800490402087384e-05
+    ],
+    "coreMLProbabilities": [
+      8.440569806276084e-06,
+      0.9999800189077618,
+      1.1540522431842046e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-sentiment-reversed",
+      "kind": "choice",
+      "instructions": "Classify the review sentiment.",
+      "context": "I absolutely love this product.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Neutral review"
+        },
+        {
+          "id": "1",
+          "description": "Positive review"
+        },
+        {
+          "id": "2",
+          "description": "Negative review"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      3854,
+      12336,
+      262,
+      1078,
+      9481,
+      260,
+      128010,
+      767,
+      294,
+      32168,
+      1078,
+      128010,
+      376,
+      294,
+      16237,
+      1078,
+      128010,
+      392,
+      294,
+      24976,
+      1078,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      584,
+      2170,
+      472,
+      291,
+      714,
+      323
+    ],
+    "markerPositions": [
+      26,
+      28,
+      30
+    ],
+    "logits": [
+      -6.7229323387146,
+      4.624889373779297,
+      -6.760395050048828
+    ],
+    "probabilities": [
+      1.1794881770731968e-05,
+      0.9999768439303143,
+      1.1361187914886585e-05
+    ],
+    "coreMLProbabilities": [
+      1.2058827676385622e-05,
+      0.9999757371034992,
+      1.220406882454549e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-support",
+      "kind": "choice",
+      "instructions": "Route the support message to the correct department.",
+      "context": "I was charged twice for the same order.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Technical support"
+        },
+        {
+          "id": "1",
+          "description": "Billing"
+        },
+        {
+          "id": "2",
+          "description": "Shipping"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      9343,
+      262,
+      523,
+      1424,
+      264,
+      262,
+      1988,
+      2307,
+      260,
+      128010,
+      767,
+      294,
+      7141,
+      523,
+      128010,
+      376,
+      294,
+      33439,
+      128010,
+      392,
+      294,
+      7749,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      584,
+      284,
+      2824,
+      2736,
+      270,
+      262,
+      454,
+      556,
+      323
+    ],
+    "markerPositions": [
+      27,
+      29,
+      31
+    ],
+    "logits": [
+      -6.092004776000977,
+      3.500778913497925,
+      -4.201014041900635
+    ],
+    "probabilities": [
+      6.818378421527596e-05,
+      0.9994800352368239,
+      0.0004517809789608177
+    ],
+    "coreMLProbabilities": [
+      9.82024227386783e-05,
+      0.999061024271869,
+      0.0008407733053923171
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-support-reversed",
+      "kind": "choice",
+      "instructions": "Route the support message to the correct department.",
+      "context": "I was charged twice for the same order.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Shipping"
+        },
+        {
+          "id": "1",
+          "description": "Billing"
+        },
+        {
+          "id": "2",
+          "description": "Technical support"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      9343,
+      262,
+      523,
+      1424,
+      264,
+      262,
+      1988,
+      2307,
+      260,
+      128010,
+      767,
+      294,
+      7749,
+      128010,
+      376,
+      294,
+      33439,
+      128010,
+      392,
+      294,
+      7141,
+      523,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      584,
+      284,
+      2824,
+      2736,
+      270,
+      262,
+      454,
+      556,
+      323
+    ],
+    "markerPositions": [
+      27,
+      29,
+      31
+    ],
+    "logits": [
+      -4.480045318603516,
+      3.6383414268493652,
+      -6.504415035247803
+    ],
+    "probabilities": [
+      0.0002979085321249533,
+      0.999662744583929,
+      3.9346883945895076e-05
+    ],
+    "coreMLProbabilities": [
+      0.0004356077785809019,
+      0.999508054354497,
+      5.63378669222482e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-animal",
+      "kind": "choice",
+      "instructions": "Choose the animal mentioned in the text.",
+      "context": "A cat is sleeping on the sofa.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Dog"
+        },
+        {
+          "id": "1",
+          "description": "Cat"
+        },
+        {
+          "id": "2",
+          "description": "Bird"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      2545,
+      1979,
+      267,
+      262,
+      1529,
+      260,
+      128010,
+      767,
+      294,
+      5763,
+      128010,
+      376,
+      294,
+      6062,
+      128010,
+      392,
+      294,
+      8687,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      266,
+      3185,
+      269,
+      4869,
+      277,
+      262,
+      5335,
+      323
+    ],
+    "markerPositions": [
+      25,
+      27,
+      29
+    ],
+    "logits": [
+      -5.722311019897461,
+      4.0789666175842285,
+      -5.688968658447266
+    ],
+    "probabilities": [
+      5.537456028049929e-05,
+      0.999887373435557,
+      5.7252004162422014e-05
+    ],
+    "coreMLProbabilities": [
+      5.611198076344807e-05,
+      0.9998803914072472,
+      6.349661198926064e-05
+    ]
+  },
+  {
+    "prompt": {
+      "id": "engine-animal-reversed",
+      "kind": "choice",
+      "instructions": "Choose the animal mentioned in the text.",
+      "context": "A cat is sleeping on the sofa.",
+      "options": [
+        {
+          "id": "0",
+          "description": "Bird"
+        },
+        {
+          "id": "1",
+          "description": "Cat"
+        },
+        {
+          "id": "2",
+          "description": "Dog"
+        }
+      ],
+      "expected": "1",
+      "category": "grounded"
+    },
+    "inputIDs": [
+      287,
+      128003,
+      1129,
+      294,
+      4989,
+      262,
+      2545,
+      1979,
+      267,
+      262,
+      1529,
+      260,
+      128010,
+      767,
+      294,
+      8687,
+      128010,
+      376,
+      294,
+      6062,
+      128010,
+      392,
+      294,
+      5763,
+      287,
+      128007,
+      767,
+      128007,
+      376,
+      128007,
+      392,
+      1263,
+      1263,
+      128002,
+      266,
+      3185,
+      269,
+      4869,
+      277,
+      262,
+      5335,
+      323
+    ],
+    "markerPositions": [
+      25,
+      27,
+      29
+    ],
+    "logits": [
+      -5.741695880889893,
+      4.158513069152832,
+      -6.025409698486328
+    ],
+    "probabilities": [
+      5.015978825099685e-05,
+      0.9999120707888504,
+      3.7769422898585254e-05
+    ],
+    "coreMLProbabilities": [
+      5.0909693789833265e-05,
+      0.9999078087544624,
+      4.128155174770682e-05
+    ]
+  }
+]
