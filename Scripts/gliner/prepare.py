@@ -183,10 +183,10 @@ def main():
         "winnerAgreementWithTorch": agreement, "caseCount": len(references),
         "packageBytes": sum(p.stat().st_size for p in (args.output / "GLiNERSmall.mlpackage").rglob("*") if p.is_file()),
     }, indent=2) + "\n")
-    for name in ("LICENSE", "LICENSE.md"):
-        source = Path(checkpoint) / name
-        if source.exists():
-            shutil.copy2(source, args.output / name)
+    # Preserve distribution notices even when the checkpoint has only a model-card license tag.
+    for source in Path(__file__).with_name("licenses").iterdir():
+        if source.is_file():
+            shutil.copy2(source, args.output / source.name)
     print(json.dumps({"exportSeconds": time.perf_counter() - started}), flush=True)
 
 

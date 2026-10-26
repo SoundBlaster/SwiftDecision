@@ -61,7 +61,7 @@ gliner-small/
 ```
 
 Preserve the upstream Apache-2.0 license and attribution when distributing model
-assets. Weights are not redistributed in this repository. The pinned model
+assets. Weights are not checked into Git; the optional distribution is a separate release asset. The pinned model
 revision is `df5910e44bc4ffdb0d95399a83b0ca4516349aa5`; the GLiNER2 reference
 implementation is pinned to `ca4f68235b50fe4c3ecf3876851d748fe4b15c6c`.
 
@@ -243,3 +243,31 @@ iPhone inference speed, peak RAM, energy use and actual host-app binary-size
 delta have not been measured. The next integration step is a separately downloaded
 checkpoint behind an application feature flag, followed by physical-device
 measurements on the intended task corpus.
+
+## Versioned downloadable distribution
+
+A separately licensed [Core ML INT8 asset](https://github.com/SoundBlaster/SwiftDecision/releases/tag/gliner2.5-small-coreml-int8-v1)
+is published independently of Swift package versions. The ZIP contains the
+`GLiNERSmall/` directory: runtime files, Apache-2.0 and MIT notices, conversion
+provenance and `distribution.json` (per-file sizes/SHA-256). `SHA256SUMS` verifies
+the complete ZIP. The first ZIP is 69,920,984 bytes; installed files and Core ML
+compilation use additional disk space. No network download runs during package
+resolution, builds or backend initialization.
+
+To package an existing export without downloading weights or running Python ML:
+
+```sh
+python3 Scripts/gliner/distribute.py --checkpoint /path/to/gliner-small --output /new/path/to/distribution
+python3 Scripts/gliner/test_distribute.py
+```
+
+Verify the published ZIP checksum, extract it, and call
+`GLiNERCoreMLBackend.load(checkpointAt:)` with the extracted `GLiNERSmall` directory.
+Do not use an unversioned `latest` URL for a production pinned model. The package
+continues to accept a caller-provisioned directory and does not own hosting,
+archive extraction, progress or an application's Apple asset packs.
+
+Oracle uses an Apple-hosted on-demand asset pack built from the same files.
+Run `xcrun ba-package AppleManifest.json -o OracleGLiNER.aar` from the generated
+distribution output directory. Apple hosting belongs to the app, not SwiftJev or
+SwiftDecision core. This output is model data, not a SwiftPM binary target.
