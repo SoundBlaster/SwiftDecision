@@ -28,6 +28,9 @@ class DistributionTests(unittest.TestCase):
             self.assertIn("LICENSE-APACHE-2.0.txt", paths)
             self.assertIn("LICENSE-MIT-DeBERTa.txt", paths)
             self.assertNotIn("reference.json", paths)
+            apple = json.loads((root / "first/AppleManifest.json").read_text())
+            self.assertRegex(apple["assetPackID"], r"^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$")
+            self.assertEqual(apple["downloadPolicy"], {"onDemand": {}})
             for entry in manifest["files"]:
                 self.assertEqual(hashlib.sha256((root / "first/GLiNERSmall" / entry["path"]).read_bytes()).hexdigest(), entry["sha256"])
 

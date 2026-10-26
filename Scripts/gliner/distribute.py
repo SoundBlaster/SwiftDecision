@@ -53,7 +53,7 @@ def package(checkpoint, output):
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (output / "SHA256SUMS").write_text(f"{digest}  {archive.name}\n")
     # This archive is packaged separately by Xcode, not embedded in an app bundle.
-    apple = {"assetPackID": "com.soundblaster.oracleball.gliner-small-v1", "downloadPolicy": {"onDemand": {}}, "fileSelectors": [{"directory": "GLiNERSmall"}], "platforms": ["iOS"]}
+    apple = {"assetPackID": "gliner-small-v1", "downloadPolicy": {"onDemand": {}}, "fileSelectors": [{"directory": "GLiNERSmall"}], "platforms": ["iOS"]}
     (output / "AppleManifest.json").write_text(json.dumps(apple, indent=2) + "\n")
     return manifest, archive
 
