@@ -71,3 +71,5 @@ jobs:
         run: swift build --target SwiftDecisionGLiNER --traits GLiNER --triple arm64-apple-ios15.0-simulator
       - name: Check Python tool syntax
         run: python3 -m py_compile Scripts/gliner/prepare.py
+      - name: Test model distribution packaging without weights
+        run: python3 -B Scripts/gliner/test_distribute.py
