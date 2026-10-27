@@ -67,12 +67,12 @@ implementation is pinned to `ca4f68235b50fe4c3ecf3876851d748fe4b15c6c`.
 
 ## Swift API
 
-This adapter is currently unreleased. To try this PR from another package:
+To use the experimental adapter from another package, opt in to the `GLiNER` trait:
 
 ```swift
 .package(
     url: "https://github.com/SoundBlaster/SwiftDecision.git",
-    branch: "codex/gliner-small-backend",
+    from: "0.9.0",
     traits: ["GLiNER"]
 )
 // Target dependencies:
