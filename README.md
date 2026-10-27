@@ -316,3 +316,5 @@ targets.
 
 `DecisionFailureCategory` provides provider-independent categories. Provider
 adapters can refine errors; consumers retain retry and fallback policy.
+
+The optional local GLiNER backend has a separately downloaded [licensed Core ML model asset](https://github.com/SoundBlaster/SwiftDecision/releases/tag/gliner2.5-small-coreml-int8-v1). See [asset delivery and integration](Documentation/GLiNERCoreMLBackend.md#versioned-downloadable-distribution); no weights are bundled in SwiftPM.
